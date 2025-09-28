@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/logo_hillium_black.png" alt="Hillium Logo" width="400"/>
+  <img src="https://www.hillium.ai/images/2048/19472636/logo_hillium_negro-HdJhznK4BDXT4RmEhZ9DJQ.png" alt="Hillium Logo" width="400"/>
 </p>
 
 <h1 align="center">Hillium Orchestrator Core (HOC)</h1>
