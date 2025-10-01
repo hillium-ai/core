@@ -114,9 +114,8 @@ Please read our CONTRIBUTING.md guide to get started.
 
 Join the conversation and connect with other builders:
 
-- [Join our Discord Server](#)
-- [Follow us on X/Twitter](#)
-- [Read our Blog](#)
+- [Join our Discord Server](https://discord.gg/n7ChqvPWgR)
+- [Follow us on X/Twitter](https://x.com/hilliumai)
 
 ## License
 
