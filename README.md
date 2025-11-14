@@ -26,7 +26,7 @@ We created HOC to solve the greatest challenge in modern technology: the disconn
 
 HOC transforms any piece of hardware from a programmed automaton into an intelligent, kinetic agent. This is made possible through our core architecture:
 
-- 🧠 **LocusCore™ (Reasoning):** An advanced engine that orchestrates LLMs (both local and cloud-based) to translate high-level goals into executable actions.
+- 🧠 **LoqusXCore™ (Reasoning):** An advanced engine that orchestrates LLMs (both local and cloud-based) to translate high-level goals into executable actions.
 - 🔌 **SynAppCore™ (Connectivity):** A universal standard for connectors. Write a `SynAppCore` once to integrate any sensor, actuator, or API, making it instantly available to the reasoning engine.
 - 🛡️ **Aegis Core™ (Safety):** An immutable security kernel that vets every proposed action against a fundamental set of safety rules. It's the "spinal cord" that ensures all actions are safe by design.
 - 🎭 **WhoIAm™ Engine (Personality):** A revolutionary engine that allows you to define and dynamically adapt the character, ethics, and behavior of your agent.
