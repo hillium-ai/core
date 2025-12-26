@@ -1,0 +1,11 @@
+[package]
+name = "motor_cortex"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "motor_cortex"
+path = "src/lib.rs"
+
+[dependencies]
+nalgebra = "0.32"
