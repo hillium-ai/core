@@ -1,0 +1,16 @@
+[package]
+name = "hipposerver"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "hipposerver"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1.35", features = ["full"] }
+sled = "0.34"
+rkyv = "0.7"
+shared_memory = "0.12"
+tracing = "0.1"
+tracing-subscriber = "0.3"
