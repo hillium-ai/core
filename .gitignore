@@ -67,3 +67,10 @@ dump.rdb
 .env
 .env.local
 .env.*.local
+private_docs
+CLAUDE.md
+
+# Local tool config
+.levitate/
+.levitate.yaml
+agents.md
