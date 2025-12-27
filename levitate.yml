@@ -1,0 +1,57 @@
+# Levitate Configuration for hillium-core
+# Defines how Levitate should interact with this project
+
+project:
+  name: "HilliumOS MVP"
+  type: "rust"  # primary language
+  
+# Build Environment Configuration
+build:
+  # Strategy: "auto", "forge", "host", "custom"
+  # - auto: Detect Forge, fallback to host
+  # - forge: Always use Forge (fail if not available)
+  # - host: Always use host environment
+  # - custom: Use custom container name
+  strategy: "auto"
+  
+  # Container name when using Docker-based builds
+  container: "hillium-forge"
+  
+  # Commands that should ALWAYS use the build environment
+  # (others will run on host even if Forge is available)
+  force_container_for:
+    - "cargo"
+    - "rustc"
+    - "cargo test"
+    - "cargo build"
+    - "cargo clippy"
+    - "pytest"
+  
+  # Commands that should NEVER use container (always host)
+  force_host_for:
+    - "git"
+    - "docker"
+    - "make"
+
+# Test Configuration
+test:
+  # Working directory for tests (relative to project root)
+  directory: "hipposerver"
+  
+  # Test command to use
+  command: "cargo test"
+  
+  # Timeout in seconds
+  timeout: 300
+
+# Judge Configuration (for WP verification)
+judge:
+  # Criteria for success
+  success_patterns:
+    - "test result: ok"
+    - "tests passed"
+  
+  failure_patterns:
+    - "error:"
+    - "FAILED"
+    - "panicked"
