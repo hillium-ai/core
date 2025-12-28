@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  hillium-forge:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.forge
+      args:
+        # Match host user ID to avoid permission issues on mounted volumes
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    container_name: hillium-forge
+    hostname: forge
+    networks:
+      - hillium-net
+    volumes:
+      # Mount entire hillium-core for live code editing
+      - .:/workspace
+      # Persistent Cargo cache (speeds up rebuilds)
+      - forge-cargo-cache:/usr/local/cargo/registry
+      - forge-cargo-git:/usr/local/cargo/git
+      # Persistent target directory
+      - forge-target:/workspace/target
+    environment:
+      - RUST_BACKTRACE=1
+      - CARGO_TERM_COLOR=always
+    # Keep container running for exec commands
+    command: tail -f /dev/null
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "cargo", "--version" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  hillium-net:
+    external: true
+
+volumes:
+  forge-cargo-cache:
+    name: hillium-forge-cargo-cache
+  forge-cargo-git:
+    name: hillium-forge-cargo-git
+  forge-target:
+    name: hillium-forge-target
