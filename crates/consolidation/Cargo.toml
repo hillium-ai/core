@@ -1,0 +1,11 @@
+[package]
+name = "consolidation"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.0", features = ["time", "sync"] }
+anyhow = "1.0"
+log = "0.4"
+associative_core = { path = "../associative_core" }
+working_memory = { path = "../working_memory" }
