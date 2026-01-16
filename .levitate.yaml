@@ -16,4 +16,24 @@ verification:
     enabled: true
     max_attempts: 3
     timeout_per_attempt_s: 120
-    
+
+# v10.7.90: Forge container integration
+build:
+  strategy: "auto"              # auto, forge, host
+  container: "hillium-forge"    # Docker container name
+  
+  force_container_for:          # ALWAYS use container if available
+    - "cargo"
+    - "rustc"
+    - "pytest"
+    - "python3"
+    - "python"
+    - "pip"
+    - "piper"
+    - "espeak"
+    - "which"                   # Verify binaries in container
+  
+  force_host_for:               # NEVER use container
+    - "git"
+    - "docker"
+    - "make"
