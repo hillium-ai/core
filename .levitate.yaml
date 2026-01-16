@@ -1,0 +1,19 @@
+project:
+  name: "HilliumOS Core"
+  description: "Public MVP code repository (hillium-core)."
+  root_path: "."
+
+rules:
+  - "EXECUTION ROOT: You are currently AT the project root."
+  - "NO NESTING: All file operations must happen in the current directory ('.')."
+  - "FORBIDDEN: DO NOT create a project subfolder (e.g. 'hilliumos/', 'hillium-core/')."
+  - "DOCS: MVP docs and Work Packages live in /Users/jsaldana/GitLocalRepo/HilliumOS (read-only)."
+  - "PRIVATE: Roadmap/internal docs live in /Users/jsaldana/GitLocalRepo/HilliumOS-Private (confidential)."
+  - "ROOT GUARD: Do not cd outside this repo unless the user explicitly asks."
+
+verification:
+  repair_loop:
+    enabled: true
+    max_attempts: 3
+    timeout_per_attempt_s: 120
+    
