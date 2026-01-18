@@ -14,9 +14,28 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     protobuf-compiler \
     pkg-config \
-    git \
-    curl \
+    libasound2-dev portaudio19-dev \
+    espeak-ng \
+    redis-tools git curl vim htop wget \
+    bash coreutils findutils grep sed gawk procps ffmpeg libopenblas-dev python3-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Install piper-tts binary (v10.7.90: WP-019 Aura Voice support)
+RUN cd /tmp && \
+    wget -q https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_arm64.tar.gz && \
+    tar -xzf piper_arm64.tar.gz && \
+    cp -r piper/* /usr/local/bin/ && \
+    rm -rf piper piper_arm64.tar.gz && \
+    piper --help > /dev/null 2>&1 || echo "piper installed"
+
+# Install Python dependencies (v10.7.70: Audio/AI stack)
+RUN pip3 install --no-cache-dir --break-system-packages \
+    pytest>=7.0 pytest-asyncio mypy black ruff \
+    pyaudio faster-whisper torch numpy \
+    silero-vad webrtcvad loguru pydantic \
+    scipy sounddevice python-dotenv \
+    scipy sounddevice python-dotenv \
+    langchain
 
 # Install Rust tools
 RUN rustup component add clippy rustfmt
