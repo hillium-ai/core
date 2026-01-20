@@ -44,16 +44,19 @@ forge:
   
   # ← NUEVO: Commands to run ONCE at session start
   setup_commands:
-    - "pip install --break-system-packages -e loqus_core"  # Install loqus_core package
-    # - "cd rust_modules && cargo build --release"
-    # Future: Node dependencies  
-    # - "npm install"
+    # 1. Python: Install loqus_core in editable mode with all dependencies
+    - "python3 -m pip install -e /workspace/loqus_core --break-system-packages --no-deps"  # Install loqus_core package (no deps)
+    
+    # 2. Rust: Compile entire workspace (all 8 crates)
+    - "cargo build --release"
   
   # ← NUEVO: Re-run setup if these files change (cache invalidation)
   setup_cache_keys:
-    - "pyproject.toml"     # Python packages config
-    - "Cargo.toml"         # Rust (when added)
-    - "package.json"       # Node (when added)
+    - "loqus_core/pyproject.toml"     # Python packages config
+    - "Cargo.toml"                    # Rust workspace
+    - "Cargo.lock"                    # Rust lockfile
+    # Future:
+    # - "package.json"
   
   # ← NUEVO: Setup behavior
   setup_policy:
