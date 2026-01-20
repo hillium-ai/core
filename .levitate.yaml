@@ -37,3 +37,26 @@ build:
     - "git"
     - "docker"
     - "make"
+
+# ← NUEVO: Workspace setup configuration
+forge:
+  workspace_path: "/workspace"  # ← FIXED: Project root is mounted to /workspace explicitly
+  
+  # ← NUEVO: Commands to run ONCE at session start
+  setup_commands:
+    - "python3 -m pip install -e /workspace/loqus_core --break-system-packages --no-deps"  # Install loqus_core package (no deps)
+    # - "cd rust_modules && cargo build --release"
+    # Future: Node dependencies  
+    # - "npm install"
+  
+  # ← NUEVO: Re-run setup if these files change (cache invalidation)
+  setup_cache_keys:
+    - "pyproject.toml"     # Python packages config
+    - "Cargo.toml"         # Rust (when added)
+    - "package.json"       # Node (when added)
+  
+  # ← NUEVO: Setup behavior
+  setup_policy:
+    run_on_session_start: true   # Run setup when Levitate starts
+    cache_duration_hours: 24     # Re-run if cache older than 24h
+    fail_on_error: true          # Stop if setup fails
