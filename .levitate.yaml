@@ -44,7 +44,7 @@ forge:
   
   # ← NUEVO: Commands to run ONCE at session start
   setup_commands:
-    - "python3 -m pip install -e /workspace/loqus_core --break-system-packages --no-deps"  # Install loqus_core package (no deps)
+    - "pip install --break-system-packages -e loqus_core"  # Install loqus_core package
     # - "cd rust_modules && cargo build --release"
     # Future: Node dependencies  
     # - "npm install"
