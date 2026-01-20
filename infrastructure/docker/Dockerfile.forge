@@ -1,78 +1,131 @@
-# Hillium Forge - Unified Build & Test Environment
-# Purpose: Provide a consistent, isolated environment for Rust/Python compilation
-# Used by: Levitate agents for dynamic verification
+# ============================================
+# hillium-forge: Ubuntu 22.04 (Jetson Compatible)
+# Migrated from rust:1.75-bookworm
+# ============================================
+FROM ubuntu:22.04
 
-FROM rust:1.75-bookworm
+# ============================================
+# Build Arguments
+# ============================================
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+ARG RUST_VERSION=1.75.0
+ARG PIPER_VERSION=1.2.0
 
-# Install Python 3.11 and system dependencies
+# ============================================
+# Environment Variables (Preserved from Debian)
+# ============================================
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+ENV RUST_VERSION=${RUST_VERSION}
+ENV CARGO_HOME=/usr/local/cargo
+ENV RUSTUP_HOME=/usr/local/rustup
+ENV CARGO_TARGET_DIR=/workspace/target
+ENV PATH="/usr/local/cargo/bin:/root/.cargo/bin:${PATH}"
+
+# ============================================
+# System Dependencies (Matched from Audit)
+# ============================================
 RUN apt-get update && apt-get install -y \
+    # Python 3.11 from deadsnakes PPA (Ubuntu 22.04 has 3.10 by default)
+    software-properties-common \
+    && add-apt-repository ppa:deadsnakes/ppa -y \
+    && apt-get update && apt-get install -y \
     python3.11 \
-    python3-pip \
     python3.11-venv \
+    python3.11-dev \
+    python3-pip \
+    # Build tools (CRITICAL for llama-cpp-python)
     build-essential \
     cmake \
     ninja-build \
-    libssl-dev \
-    protobuf-compiler \
     pkg-config \
-    libasound2-dev portaudio19-dev \
+    protobuf-compiler \
+    # Libraries (CRITICAL for llama.cpp compilation)
+    libssl-dev \
+    libopenblas-dev \
+    ca-certificates \
+    # Audio/TTS dependencies (preserved from audit)
+    libasound2-dev \
+    portaudio19-dev \
     espeak-ng \
-    redis-tools git curl vim htop wget \
-    bash coreutils findutils grep sed gawk procps ffmpeg libopenblas-dev python3-dev \
+    ffmpeg \
+    # Utilities (preserved from audit)
+    git \
+    curl \
+    wget \
+    vim \
+    htop \
+    redis-tools \
+    procps \
+    sudo \
     && rm -rf /var/lib/apt/lists/*
 
-# Install piper-tts binary (v10.7.90: WP-019 Aura Voice support)
-RUN cd /tmp && \
-    wget -q https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_arm64.tar.gz && \
-    tar -xzf piper_arm64.tar.gz && \
-    cp -r piper/* /usr/local/bin/ && \
-    rm -rf piper piper_arm64.tar.gz && \
-    piper --help > /dev/null 2>&1 || echo "piper installed"
+# ============================================
+# Set Python 3.11 as Default
+# ============================================
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
+    && update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
 
-# Install Python dependencies (v10.7.70: Audio/AI stack)
-RUN pip3 install --no-cache-dir --break-system-packages \
-    pytest>=7.0 pytest-asyncio mypy black ruff \
-    pyaudio faster-whisper torch numpy \
-    silero-vad webrtcvad loguru pydantic \
-    scipy sounddevice python-dotenv \
-    scipy sounddevice python-dotenv \
-    langchain
+# Upgrade pip to latest
+RUN python3.11 -m pip install --upgrade pip setuptools wheel
 
-# Install Rust tools
-RUN rustup component add clippy rustfmt
+# ============================================
+# Rust Installation (replaces rust:1.75-bookworm base)
+# ============================================
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+    sh -s -- -y --default-toolchain ${RUST_VERSION} --profile default \
+    && . $CARGO_HOME/env \
+    && rustup component add clippy rustfmt
 
-# Install uv (fast Python package manager)
+# Ensure cargo is in PATH for all users
+RUN echo 'source /usr/local/cargo/env' >> /etc/bash.bashrc
+
+# ============================================
+# Piper TTS Installation (ARM64) - PRESERVED
+# ============================================
+RUN mkdir -p /tmp/piper && cd /tmp/piper \
+    && wget -q https://github.com/rhasspy/piper/releases/download/v${PIPER_VERSION}/piper_arm64.tar.gz \
+    && tar -xzf piper_arm64.tar.gz \
+    && mv piper/piper /usr/local/bin/piper \
+    && chmod +x /usr/local/bin/piper \
+    && rm -rf /tmp/piper
+
+# ============================================
+# UV Package Manager (Optional speedup)
+# ============================================
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:$PATH"
 
-# Set working directory
-WORKDIR /workspace
+# ============================================
+# User Creation (CRITICAL for host permissions)
+# ============================================
+RUN groupadd -g ${GROUP_ID} forgeuser \
+    && useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash forgeuser \
+    && echo "forgeuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Create a non-root user matching host UID (for file permission parity)
-# Default to UID 1000, override via docker-compose if needed
-ARG USER_ID=1000
-ARG GROUP_ID=1000
-RUN groupadd -g ${GROUP_ID} forge || true
-RUN useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash forgeuser || true
+# Give forgeuser access to cargo
+RUN chown -R forgeuser:forgeuser ${CARGO_HOME} ${RUSTUP_HOME}
 
-# Switch to non-root user for builds
+# ============================================
+# Cargo Registry Warmup (Preserved optimization)
+# ============================================
 USER forgeuser
+WORKDIR /tmp/warmup
+RUN cargo init --name warmup \
+    && echo 'tokio = { version = "1", features = ["full"] }' >> Cargo.toml \
+    && echo 'sled = "0.34"' >> Cargo.toml \
+    && cargo fetch \
+    && rm -rf /tmp/warmup
 
-# Pre-warm Cargo cache (optional optimization)
-# This creates a dummy project to cache common dependencies
-RUN cargo init --name dummy /tmp/warmup && \
-    cd /tmp/warmup && \
-    echo 'tokio = { version = "1.35", features = ["full"] }' >> Cargo.toml && \
-    echo 'sled = "0.34"' >> Cargo.toml && \
-    cargo build --release && \
-    rm -rf /tmp/warmup
+# ============================================
+# Final Setup
+# ============================================
+USER forgeuser
+WORKDIR /workspace
+ENV HOME=/home/forgeuser
 
-# Set Cargo target directory to a cached volume (speeds up rebuilds)
-ENV CARGO_TARGET_DIR=/workspace/target
-
-# Health check: Verify Rust and Python are available
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD cargo --version && python3 --version || exit 1
+    CMD python3 --version && rustc --version || exit 1
 
-# Default command: Keep container alive for exec commands
-CMD ["tail", "-f", "/dev/null"]
+# Default command
+CMD ["/bin/bash"]
