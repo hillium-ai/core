@@ -71,6 +71,13 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 RUN python3.11 -m pip install --upgrade pip setuptools wheel
 
 # ============================================
+# Core Python Packages (Required for all operations)
+# ============================================
+RUN pip install --break-system-packages \
+    llama-cpp-python \
+    && python3 -c "from llama_cpp import Llama; print('✅ llama-cpp-python installed')"
+
+# ============================================
 # Rust Installation (replaces rust:1.75-bookworm base)
 # ============================================
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
