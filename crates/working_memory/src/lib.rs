@@ -24,6 +24,9 @@ pub struct ContextRecord {
 }
 
 /// Working Memory Manager using Sled DB
+pub type WorkingMemory = WorkingMemoryManager;
+
+#[derive(Debug)]
 pub struct WorkingMemoryManager {
     db: Arc<Mutex<sled::Db>>,
 }

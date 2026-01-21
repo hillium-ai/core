@@ -16,6 +16,9 @@ pub struct ShmHandle {
     _send_marker: PhantomData<Box<dyn Send + Sync>>,
 }
 
+unsafe impl Send for ShmHandle {}
+unsafe impl Sync for ShmHandle {}
+
 impl ShmHandle {
     /// Creates a new shared memory segment with the given name.
     pub fn create(name: &str) -> Result<Self> {

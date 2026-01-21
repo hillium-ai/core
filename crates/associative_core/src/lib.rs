@@ -41,6 +41,16 @@ impl AssociativeCore {
         Ok(prediction)
     }
 
+    /// Exports the current fast weights as a flattened vector.
+    /// Used for consolidation.
+    pub async fn export_weights(&self) -> Result<Vec<f32>> {
+        let weights = self.fast_weights.read().map_err(|_| anyhow!("Lock poisoned"))?;
+        // Flatten the array to a vector
+        // .as_slice() works if contiguous, otherwise use iter/to_vec
+        // weights is Array2. 
+        Ok(weights.iter().cloned().collect())
+    }
+
     /// Updates fast weights online if the surprise exceeds the threshold.
     /// Returns true if an update occurred.
     pub fn update_online(&self, context: &Array1<f32>, target: &Array1<f32>) -> Result<bool> {

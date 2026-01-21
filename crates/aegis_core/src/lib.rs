@@ -1,9 +1,8 @@
-use hipposerver::shm::ShmHandle;use hipposerver::shm::ShmHandle;
+use hipposerver::shm::ShmHandle;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::thread;
-use std::time::Duration;use std::sync::Arc;
-use std::sync::atomic::Ordering;
+use std::time::Duration;
 
 /// Safety check result
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -74,6 +73,7 @@ impl AegisCore {
         self.hippo.state().layer7_emergency_brake.store(false, Ordering::Release);
 
         log::info!("All safety locks cleared");
+    }
 
     /// Start heartbeat thread (10Hz = 100ms interval)
     pub fn start_heartbeat_thread(&self) {
@@ -93,13 +93,11 @@ impl AegisCore {
             }
         });
     }
-    }
 }
 
 #[cfg(test)]
-mod tests {#[cfg(test)]
 mod tests {
-    use hipposerver::shm::ShmHandle;use hipposerver::shm::ShmHandle;
+    use hipposerver::shm::ShmHandle;
 
     #[test]
     fn test_estop() {
