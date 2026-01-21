@@ -1,5 +1,4 @@
 use hipposerver::shm::ShmHandle;
-use crate::values::ValueScorecard;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::thread;
@@ -15,17 +14,12 @@ pub enum SafetyResult {
 /// Aegis safety validator (MVP version)
 pub struct AegisCore {
     hippo: Arc<ShmHandle>,
-    /// Value scorecards from latest evaluation
-    pub value_scores: Vec<ValueScorecard>,
 }
 
 impl AegisCore {
     /// Create new Aegis instance
     pub fn new(hippo: Arc<ShmHandle>) -> Self {
-        Self { 
-            hippo,
-            value_scores: Vec::new()
-        }
+        Self { hippo }
     }
 
     /// Validate command (MVP: just check E-Stop)
@@ -79,16 +73,6 @@ impl AegisCore {
         self.hippo.state().layer7_emergency_brake.store(false, Ordering::Release);
 
         log::info!("All safety locks cleared");
-    }
-
-    /// Stub: Returns constant scores for MVP
-    pub fn evaluate_values(&mut self) -> Vec<ValueScorecard> {
-        let scores = vec![
-            ValueScorecard::new("safety", 1.0, "Placeholder: always safe"),
-            ValueScorecard::new("efficiency", 0.5, "Placeholder: neutral"),
-        ];
-        self.value_scores = scores.clone();
-        scores
     }
 
     /// Start heartbeat thread (10Hz = 100ms interval)
