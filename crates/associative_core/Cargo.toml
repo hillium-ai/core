@@ -1,0 +1,9 @@
+[package]
+name = "associative_core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ndarray = "0.15"
+rand = "0.8"
+anyhow.workspace = true

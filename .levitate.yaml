@@ -37,3 +37,16 @@ build:
     - "git"
     - "docker"
     - "make"
+
+forge:
+  setup:
+    - "pip install -e loqus_core"
+    - "pip install pytest pytest-asyncio"
+    - "cargo build -p hipposerver -p hillium_backend"
+  
+  setup_cache_keys:
+    - "loqus_core/pyproject.toml"
+    - "Cargo.toml"
+    - "Cargo.lock"
+    - "hipposerver/Cargo.toml"
+    - "hillium_backend/Cargo.toml"

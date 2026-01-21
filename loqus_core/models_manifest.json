@@ -1,0 +1,28 @@
+{
+    "models": [
+        {
+            "name": "tiny-llama",
+            "size": "small",
+            "speed": 9.5,
+            "accuracy": 0.55,
+            "cost": 0.005,
+            "available": true
+        },
+        {
+            "name": "qwen2-7b",
+            "size": "medium",
+            "speed": 6.0,
+            "accuracy": 0.82,
+            "cost": 0.05,
+            "available": true
+        },
+        {
+            "name": "mistral-large",
+            "size": "large",
+            "speed": 2.5,
+            "accuracy": 0.94,
+            "cost": 0.15,
+            "available": true
+        }
+    ]
+}

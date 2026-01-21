@@ -2,6 +2,9 @@ use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicU8, Ordering};
 use std::ffi::c_char;
 use std::time::Duration;
 
+pub const CONVERSATION_BUFFER_SIZE: usize = 32 * 1024; // 32KB
+pub const AUDIO_BUFFER_SIZE: usize = 512 * 1024; // 512KB
+
 /// Magic number for HippoState validation
 pub const HILLIUM_MAGIC: u32 = 0x48494C4C;
 
@@ -14,6 +17,7 @@ pub enum IntentState {
     Thinking = 2,
     Speaking = 3,
     Acting = 4,
+    Error = 5,
     Emergency = 255,
 }
 
@@ -83,44 +87,44 @@ pub struct HippoState {
     pub seq_lock: SeqLock,
     
     /// Level 1: Sensory Buffer
-    /// Conversation ring buffer pointer
-    pub conversation_buffer_ptr: *mut u8,
-    /// Conversation buffer size
-    pub conversation_buffer_size: usize,
-    /// Audio ring buffer pointer
-    pub audio_buffer_ptr: *mut u8,
-    /// Audio buffer size
-    pub audio_buffer_size: usize,
+    /// Conversation ring buffer
+    pub conversation_buffer: [u8; CONVERSATION_BUFFER_SIZE],
+    pub conversation_length: AtomicU64,
+    
+    /// Audio ring buffer
+    pub audio_buffer: [u8; AUDIO_BUFFER_SIZE],
+    pub audio_write_ptr: AtomicU64,
+    pub audio_read_ptr: AtomicU64,
     
     /// Level 2: Working Memory
     /// Sled database path
-    pub sled_db_path: *mut c_char,
-    /// Sled database path length
-    pub sled_db_path_len: usize,
+    pub sled_db_path: [u8; 256],
     
     /// Level 2.5: Associative Core
-    /// Fast weights pointer
-pub fast_weights_ptr: *mut f32,
-    /// Fast weights size
-    pub fast_weights_size: usize,
+    /// Pointer to fast weights (kept as pointer for separate large allocation)
+    pub fast_weights_ptr: AtomicU64,
     /// Associative update count
     pub associative_update_count: AtomicU64,
+    pub needs_consolidation: AtomicBool,
     
     /// Level 3: Episodic Store Metadata
-    /// Qdrant collection name pointer
-    pub qdrant_collection: *mut c_char,
-    /// Qdrant collection name length
-    pub qdrant_collection_len: usize,
+    /// Qdrant collection name
+    pub qdrant_collection: [u8; 64],
     /// Last consolidation timestamp in nanoseconds
     pub last_consolidation_ns: AtomicU64,
     
+    /// Heartbeats
+    pub hb_loqus_ns: AtomicU64,
+    pub hb_aegis_ns: AtomicU64,
+    pub hb_aura_ns: AtomicU64,
+
     /// Causal clock for distributed consistency
     pub causal_clock: [u64; 8],
     
     /// Robot telemetry data
     pub telemetry: RobotTelemetry,
     
-    /// Padding to ensure 64-byte alignment
+    /// Padding to ensure alignment
     pub _padding: [u8; 64],
 }
 
@@ -132,18 +136,20 @@ impl HippoState {
             safety_lock: AtomicBool::new(false),
             boot_timestamp_ns: AtomicU64::new(0),
             seq_lock: SeqLock::new(),
-            conversation_buffer_ptr: std::ptr::null_mut(),
-            conversation_buffer_size: 0,
-            audio_buffer_ptr: std::ptr::null_mut(),
-            audio_buffer_size: 0,
-            sled_db_path: std::ptr::null_mut(),
-            sled_db_path_len: 0,
-            fast_weights_ptr: std::ptr::null_mut(),
-            fast_weights_size: 0,
+            conversation_buffer: [0u8; CONVERSATION_BUFFER_SIZE],
+            conversation_length: AtomicU64::new(0),
+            audio_buffer: [0u8; AUDIO_BUFFER_SIZE],
+            audio_write_ptr: AtomicU64::new(0),
+            audio_read_ptr: AtomicU64::new(0),
+            sled_db_path: [0u8; 256],
+            fast_weights_ptr: AtomicU64::new(0),
             associative_update_count: AtomicU64::new(0),
-            qdrant_collection: std::ptr::null_mut(),
-            qdrant_collection_len: 0,
+            needs_consolidation: AtomicBool::new(false),
+            qdrant_collection: [0u8; 64],
             last_consolidation_ns: AtomicU64::new(0),
+            hb_loqus_ns: AtomicU64::new(0),
+            hb_aegis_ns: AtomicU64::new(0),
+            hb_aura_ns: AtomicU64::new(0),
             causal_clock: [0; 8],
             telemetry: RobotTelemetry::default(),
             _padding: [0; 64],

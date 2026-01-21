@@ -21,8 +21,8 @@ impl AssociativeCore {
         decay_rate: f32,
     ) -> Self {
         let mut rng = rand::thread_rng();
-        let fast_weights = Array2::zeros((rows, cols)).mapv(|_| rng.gen_range(-0.01..0.01));
-        let momentum_buffer = Array2::zeros((rows, cols));
+        let fast_weights = Array2::<f32>::zeros((rows, cols)).mapv(|_: f32| rng.gen_range(-0.01..0.01));
+        let momentum_buffer = Array2::<f32>::zeros((rows, cols));
 
         Self {
             fast_weights: Arc::new(RwLock::new(fast_weights)),
