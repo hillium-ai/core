@@ -10,3 +10,5 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3 = { version = "0.20", features = ["extension-module"] }
 numpy = "0.20"
+hipposerver = { path = "../hipposerver" }
+shared_memory = "0.12"

@@ -2,7 +2,7 @@
 // This module provides additional state-related functionality
 // that doesn't fit in the core layout module
 
-pub mod layout;
+use crate::shm::layout;
 
 /// State initialization and management
 pub struct StateManager {
@@ -14,29 +14,40 @@ impl StateManager {
         Self { state: state_ptr }
     }
 
-    pub fn initialize(&self) -> Result<(), &'static str> {
+    pub fn initialize(&self) -> Result<(), String> {
         unsafe {
             let state = &mut *self.state;
             
             // Initialize with default values
             state.magic.store(layout::HILLIUM_MAGIC, std::sync::atomic::Ordering::Relaxed);
             state.current_intent.store(layout::IntentState::Idle as u8, std::sync::atomic::Ordering::Relaxed);
-            state.safety_lock.store(0, std::sync::atomic::Ordering::Relaxed);
+            state.safety_lock.store(false, std::sync::atomic::Ordering::Relaxed);
             state.boot_timestamp_ns.store(0, std::sync::atomic::Ordering::Relaxed);
             
-            // Initialize all pointers to null
-            state.conversation_buffer_ptr = std::ptr::null_mut();
-            state.conversation_buffer_size = 0;
-            state.audio_buffer_ptr = std::ptr::null_mut();
-            state.audio_buffer_size = 0;
-            state.sled_db_path = std::ptr::null_mut();
-            state.sled_db_path_len = 0;
-            state.fast_weights_ptr = std::ptr::null_mut();
-            state.fast_weights_size = 0;
+            // Clear buffers
+            state.conversation_buffer.fill(0);
+            state.conversation_length.store(0, std::sync::atomic::Ordering::Relaxed);
+            state.audio_buffer.fill(0);
+            state.audio_write_ptr.store(0, std::sync::atomic::Ordering::Relaxed);
+            state.audio_read_ptr.store(0, std::sync::atomic::Ordering::Relaxed);
+            
+            // Default paths
+            let sled_path = "/tmp/hillium_sled".as_bytes();
+            state.sled_db_path[..sled_path.len()].copy_from_slice(sled_path);
+            
+            state.fast_weights_ptr.store(0, std::sync::atomic::Ordering::Relaxed);
             state.associative_update_count.store(0, std::sync::atomic::Ordering::Relaxed);
-            state.qdrant_collection_ptr = std::ptr::null_mut();
-            state.qdrant_collection_len = 0;
+            state.needs_consolidation.store(false, std::sync::atomic::Ordering::Relaxed);
+            
+            let qdrant_name = "hillium_episodes".as_bytes();
+            state.qdrant_collection[..qdrant_name.len()].copy_from_slice(qdrant_name);
+            
             state.last_consolidation_ns.store(0, std::sync::atomic::Ordering::Relaxed);
+            
+            // Initialize heartbeats
+            state.hb_loqus_ns.store(0, std::sync::atomic::Ordering::Relaxed);
+            state.hb_aegis_ns.store(0, std::sync::atomic::Ordering::Relaxed);
+            state.hb_aura_ns.store(0, std::sync::atomic::Ordering::Relaxed);
             
             // Initialize causal clock
             for i in 0..8 {

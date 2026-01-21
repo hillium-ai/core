@@ -8,9 +8,10 @@ name = "hipposerver"
 path = "src/main.rs"
 
 [dependencies]
-tokio = { version = "1.35", features = ["full"] }
-sled = "0.34"
-rkyv = "0.7"
-shared_memory = "0.12"
-tracing = "0.1"
-tracing-subscriber = "0.3"
+tokio.workspace = true
+sled.workspace = true
+rkyv.workspace = true
+shared_memory.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true
