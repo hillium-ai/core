@@ -50,9 +50,12 @@ impl ConsolidationScheduler {
 }
 
 // Heuristic: filter weights > 0.5
-fn weights_to_knowledge(weights: Vec<(String, f32)>) -> Vec<(String, f32)> {
+// Heuristic: filter weights > 0.5
+fn weights_to_knowledge(weights: Vec<f32>) -> Vec<(String, f32)> {
     weights
         .into_iter()
+        .enumerate()
         .filter(|(_, weight)| *weight > 0.5)
+        .map(|(i, weight)| (format!("weight_{}", i), weight))
         .collect()
 }

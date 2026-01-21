@@ -79,6 +79,8 @@ pub struct HippoState {
     
     /// Safety lock flag
     pub safety_lock: AtomicBool,
+    /// Layer 7 cognitive emergency brake
+    pub layer7_emergency_brake: AtomicBool,
     
     /// Boot timestamp in nanoseconds
     pub boot_timestamp_ns: AtomicU64,
@@ -134,6 +136,7 @@ impl HippoState {
             magic: AtomicU32::new(HILLIUM_MAGIC),
             current_intent: AtomicU8::new(IntentState::Idle as u8),
             safety_lock: AtomicBool::new(false),
+            layer7_emergency_brake: AtomicBool::new(false),
             boot_timestamp_ns: AtomicU64::new(0),
             seq_lock: SeqLock::new(),
             conversation_buffer: [0u8; CONVERSATION_BUFFER_SIZE],
