@@ -3,23 +3,26 @@
 
 import os
 import time
-import threading
 from enum import Enum
 from typing import Optional, Dict, Any, Tuple
 import platform
 
-try:except ImportError:
+try:
+    from llama_cpp import Llama
+    LLAMA_CPP_AVAILABLE = True
+except ImportError:
     LLAMA_CPP_AVAILABLE = False
     Llama = None
 
 # Import backend classes
 try:
-    from loqus_core.inference.backend import LlamaCppBackend, PowerInferBackend, InferenceBackend
+    from loqus_core.inference.backend import LlamaCppBackend, PowerInferBackend
     BACKENDS_AVAILABLE = True
 except ImportError:
     BACKENDS_AVAILABLE = False
     LlamaCppBackend = None
     PowerInferBackend = None
+
 
 class ModelStatus(Enum):
     """Model loading/unloading status"""
@@ -28,6 +31,7 @@ class ModelStatus(Enum):
     READY = "ready"
     ERROR = "error"
 
+
 class ModelConfig:
     """Configuration for model loading"""
     def __init__(self, model_path: str, n_gpu_layers: int = -1, n_ctx: int = 2048):
@@ -35,16 +39,16 @@ class ModelConfig:
         self.n_gpu_layers = n_gpu_layers
         self.n_ctx = n_ctx
 
+
 class NativeModelManager:
     """Manages native LLM inference using llama-cpp-python"""
     
     def __init__(self, backend_type: str = "llama.cpp"):
         self.backend_type = backend_type
-        self.model = None
+        self.model: Optional[Llama] = None
         self.status = ModelStatus.UNLOADED
-        self.config = None
+        self.config: Optional[ModelConfig] = None
         self.hardware_info = self._detect_hardware()
-        self._lock = threading.Lock()  # For thread safety
     
     def _detect_hardware(self) -> Dict[str, Any]:
         """
@@ -253,7 +257,7 @@ class NativeModelManager:
         # Use the backend's generate method
         if self.backend_type == "llama.cpp" and isinstance(self.model, LlamaCppBackend):
             # Use the backend's generate method
-                        # Pass parameters directly to backend's generate method
+            from loqus_core.inference.backend import GenerateParams
             params = GenerateParams(max_tokens=max_tokens, temperature=temperature)
             start_time = time.time()
             output = self.model.generate(prompt, params)
@@ -325,3 +329,4 @@ class NativeModelManager:
             return False, "Running in Forge container - CPU only, inference will be slow"
         else:
             return False, "Unknown environment - GPU acceleration not detected"
+

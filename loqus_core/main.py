@@ -30,7 +30,7 @@ class Loop:
         
         # Initialize subsystems
         self.hippo = HippoLink()
-        self.model_manager = NativeModelManager()
+        self.model_manager = NativeModelManager(backend_type="llama.cpp")
         self.council = CognitiveCouncil()
         self.safety = CognitiveSafetyValidator()
         
