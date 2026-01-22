@@ -1,0 +1,15 @@
+from loqus_core.observability.query_engine import QueryEngine, ReadOnlyViolationError
+import tempfile
+
+test_sql = "INSERT INTO test VALUES (1)"
+
+with tempfile.TemporaryDirectory() as tmp:
+    e = QueryEngine(tmp)
+    print('Testing write operation blocking...')
+    try:
+        e.query_logs(test_sql)
+        print('ERROR: Should have blocked INSERT')
+    except ReadOnlyViolationError:
+        print('✅ INSERT correctly blocked')
+    except Exception as ex:
+        print(f'Other exception: {ex}')

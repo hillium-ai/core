@@ -13,3 +13,6 @@ dependencies = [
     "silero-vad>=2.1.0",
     "webrtcvad>=2.0.10",
 ]
+
+[project.optional-dependencies]
+observability = ["duckdb>=1.0.0"]
