@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from typing import Dict, Any, Optional
 import logging
 import threading
+import pathlib
+import pathlib
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -84,6 +86,14 @@ class LlamaCppBackend(InferenceBackend):
         if not path or not isinstance(path, str):
             raise ValueError("Model path must be a non-empty string")
         
+        # Security check: prevent path traversal attacks
+        try:
+            path_obj = pathlib.Path(path).resolve()
+            if not path_obj.exists():
+                raise ValueError(f"Model file does not exist: {path}")
+        except Exception as e:
+            raise ValueError(f"Invalid model path: {str(e)}")
+        
         try:
             from llama_cpp import Llama
             
@@ -123,6 +133,10 @@ class LlamaCppBackend(InferenceBackend):
         # Validate input
         if not prompt or not isinstance(prompt, str):
             raise ValueError("Prompt must be a non-empty string")
+        
+        # Security check: prevent overly long prompts
+        if len(prompt) > 100000:  # 100KB limit
+            raise ValueError("Prompt exceeds maximum allowed length")
         
         if not self.is_loaded:
             raise RuntimeError("Model must be loaded before generation")

@@ -8,7 +8,11 @@ from enum import Enum
 from typing import Optional, Dict, Any, Tuple
 import platform
 
-try:except ImportError:
+try:
+    from llama_cpp import Llama
+except ImportError:
+    LLAMA_CPP_AVAILABLE = False
+    Llama = None
     LLAMA_CPP_AVAILABLE = False
     Llama = None
 
