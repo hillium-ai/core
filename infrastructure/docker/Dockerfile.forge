@@ -46,6 +46,8 @@ ENV PATH="/root/.cargo/bin:$PATH"
 
 # Set working directory
 WORKDIR /workspace
+ENV PYTHONPATH="/workspace:${PYTHONPATH}"
+
 
 # Create a non-root user matching host UID (for file permission parity)
 # Default to UID 1000, override via docker-compose if needed
