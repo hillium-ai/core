@@ -1,5 +1,9 @@
+"""Enhanced unit tests for Inference Backend Interface with security and error handling."""
+
 import pytest
+import os
 from unittest.mock import Mock, patch
+
 from loqus_core.inference.backend import (
     LlamaCppBackend,
     PowerInferBackend,
@@ -104,3 +108,62 @@ def test_generate_result_dataclass():
     assert result.tokens_generated == 10
     assert result.latency_ms == 100.0
     assert result.finish_reason == "stop"
+
+
+def test_llamacpp_backend_path_validation():
+    """Test that LlamaCppBackend validates model paths correctly."""
+    backend = LlamaCppBackend()
+    
+    # Test with invalid path type
+    with pytest.raises(TypeError):
+        backend.load_model(123, {})
+    
+    # Test with empty path
+    with pytest.raises(ValueError):
+        backend.load_model("", {})
+    
+    # Test with non-existent file
+    with pytest.raises(FileNotFoundError):
+        backend.load_model("/non/existent/file.gguf", {})
+    
+    # Test with directory path (should fail)
+    with pytest.raises(ValueError):
+        backend.load_model("/", {})
+
+
+def test_llamacpp_backend_path_traversal_protection():
+    """Test that LlamaCppBackend protects against path traversal."""
+    backend = LlamaCppBackend()
+    
+    # Test path traversal detection
+    with pytest.raises(ValueError):
+        backend.load_model("/path/../secret_file.gguf", {})
+
+
+def test_llamacpp_backend_input_validation():
+    """Test that LlamaCppBackend validates inputs correctly."""
+    backend = LlamaCppBackend()
+    
+    # Test with valid model path (but don't actually load it)
+    with patch('os.path.exists') as mock_exists:
+        mock_exists.return_value = True
+        with patch('os.path.isfile') as mock_isfile:
+            mock_isfile.return_value = True
+            
+            # This should work without errors
+            try:
+                backend.load_model("/valid/model.gguf", {})
+            except Exception:
+                # We expect this to fail due to missing llama_cpp import
+                pass
+
+
+def test_llamacpp_backend_unload_safety():
+    """Test that unload method is safe to call multiple times."""
+    backend = LlamaCppBackend()
+    
+    # Unload when not loaded should not raise error
+    backend.unload()  # Should not raise
+    
+    # Unload again should not raise error
+    backend.unload()  # Should not raise

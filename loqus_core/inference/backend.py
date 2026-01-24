@@ -1,14 +1,9 @@
-"""
-Inference Backend Interface
-
-Defines the contract for all inference backends in HilliumOS.
-Enables hot-swapping between llama.cpp and PowerInfer.
-"""
-
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Dict, Any
+import os
+import pathlib
 
 logger = logging.getLogger(__name__)
 
@@ -110,17 +105,58 @@ class LlamaCppBackend(InferenceBackend):
     
     def load_model(self, path: str, config: Dict[str, Any]) -> None:
         """Load model using llama-cpp-python."""
+        # Input validation
+        if not isinstance(path, str):
+            logger.error(f"Invalid path type: {type(path)}")
+            raise TypeError("Model path must be a string")
+        
+        if not path:
+            logger.error("Empty model path provided")
+            raise ValueError("Model path cannot be empty")
+        
+        # Validate path (prevent path traversal)
+        try:
+            # Check if path is absolute
+            if not os.path.isabs(path):
+                logger.warning(f"Model path is not absolute: {path}")
+
+            # Security check: prevent path traversal
+            # Check if path contains '..' before normalization
+            if '..' in path:
+                logger.error(f"Path traversal detected in model path: {path}")
+                raise ValueError("Path traversal detected in model path")
+
+            # Normalize the path after security checks
+            normalized_path = os.path.normpath(path)
+            
+            # Check if file exists
+            if not os.path.exists(normalized_path):
+                logger.error(f"Model file does not exist: {normalized_path}")
+                raise FileNotFoundError(f"Model file not found: {normalized_path}")
+
+            # Check if it's a file (not a directory)
+            if not os.path.isfile(normalized_path):
+                logger.error(f"Model path is not a file: {normalized_path}")
+                raise ValueError(f"Model path is not a file: {normalized_path}")
+
+        except (FileNotFoundError, ValueError) as e:
+            # Re-raise specific exceptions without wrapping
+            raise e
+        except Exception as e:
+            logger.error(f"Model path validation failed: {e}")
+            raise RuntimeError(f"Model path validation failed: {e}")
+        
         try:
             from llama_cpp import Llama
             
             self._model = Llama(
-                model_path=path,
+                model_path=normalized_path,
                 n_ctx=config.get("n_ctx", 4096),
                 n_gpu_layers=config.get("n_gpu_layers", -1),
                 verbose=config.get("verbose", False),
             )
-            self._model_path = path
-            logger.info(f"Loaded model: {path}")
+            self._model_path = normalized_path
+            logger.info(f"Loaded model: {normalized_path}")
             
         except ImportError:
             logger.error("llama-cpp-python not installed")
@@ -131,6 +167,14 @@ class LlamaCppBackend(InferenceBackend):
     
     def generate(self, prompt: str, params: GenerateParams) -> GenerateResult:
         """Generate text using llama.cpp."""
+        # Input validation
+        if not isinstance(prompt, str):
+            logger.error(f"Invalid prompt type: {type(prompt)}")
+            raise TypeError("Prompt must be a string")
+        
+        if not prompt:
+            logger.warning("Empty prompt provided")
+            
         if not self.is_loaded():
             logger.error("Attempted generation without loaded model")
             raise RuntimeError("Model not loaded. Call load_model() first.")
@@ -164,11 +208,18 @@ class LlamaCppBackend(InferenceBackend):
     def unload(self) -> None:
         """Unload model."""
         if self._model is not None:
-            del self._model
-            self._model = None
-            self._model_path = None
-            logger.info("Model unloaded")
-    
+            try:
+                del self._model
+                self._model = None
+                self._model_path = None
+                logger.info("Model unloaded")
+            except Exception as e:
+                logger.error(f"Error during model unload: {e}")
+                # Continue to clear references even if deletion fails
+                self._model = None
+                self._model_path = None
+                raise RuntimeError(f"Error during model unload: {e}")
+        
     def is_loaded(self) -> bool:
         return self._model is not None
 
