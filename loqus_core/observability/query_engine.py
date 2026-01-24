@@ -1,181 +1,127 @@
-"""
-DuckDB Query Engine for Agentic Observability
-
-SAFETY: This engine is READ-ONLY. All write attempts are blocked.
-"""
-
-import logging
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-
 import duckdb
-import sqlparse
+import logging
+from typing import Dict, Any
+from pathlib import Path
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Global connection variable
+_connection = None
 
 
 class QueryEngineError(Exception):
-    """Base exception for query engine errors."""
+    """Custom exception for query engine errors."""
     pass
 
-class ReadOnlyViolationError(QueryEngineError):
-    """Raised when a write operation is attempted."""
+class ReadOnlyViolationError(Exception):
+    """Custom exception for read-only violations."""
     pass
 
-class QueryEngine:
-    """
-    Read-only DuckDB query engine for observability.
-    
-    Example:
-        engine = QueryEngine("/path/to/telemetry")
-        result = engine.query_logs("SELECT * FROM sensors LIMIT 10")
-    """
-    
-    # SQL keywords that indicate write operations
-    WRITE_KEYWORDS = frozenset([
-        'INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER',
-        'TRUNCATE', 'REPLACE', 'MERGE', 'UPSERT', 'WITH'
-    ])
-    
-    def __init__(self, data_dir: str, memory_limit: str = "256MB"):
-        """
-        Initialize query engine.
-        
-        Args:
-            data_dir: Directory containing Parquet files
-            memory_limit: DuckDB memory limit (default 256MB)
-        """
-        self.data_dir = Path(data_dir)
-        self.memory_limit = memory_limit
-        
+
+def _initialize_connection() -> duckdb.Connection:
+    """Initialize DuckDB connection with read-only mode."""
+    global _connection
+    if _connection is None:
         try:
-            # Create connection
-            self.conn = duckdb.connect()
-            self.conn.execute(f"SET memory_limit='{memory_limit}'")
-            
-            # Register Parquet files as tables
-            self._register_tables()
-            
-            logger.info(f"QueryEngine initialized with data_dir={data_dir}")
+            # Connect to DuckDB in read-only mode
+            _connection = duckdb.connect(database=':memory:', read_only=True)
+            logger.info("DuckDB connection initialized in read-only mode")
         except Exception as e:
-            logger.error(f"Failed to initialize QueryEngine: {e}")
-            raise QueryEngineError(f"Failed to initialize QueryEngine: {e}")
+            logger.error(f"Failed to initialize DuckDB connection: {e}")
+            raise QueryEngineError(f"Failed to initialize DuckDB: {e}")
+    return _connection
+
+
+def _validate_sql(sql: str) -> None:
+    """Validate SQL to ensure it's read-only."""
+    # Convert to uppercase for case-insensitive comparison
+    upper_sql = sql.strip().upper()
     
-    def _register_tables(self):
-        """Auto-register Parquet files as tables."""
-        if not self.data_dir.exists():
-            logger.warning(f"Data directory does not exist: {self.data_dir}")
-            return
-        
-        for parquet_file in self.data_dir.glob("*.parquet"):
-            table_name = parquet_file.stem  # filename without extension
-            try:
-                self.conn.execute(f"""
-                    CREATE OR REPLACE VIEW {table_name} AS 
-                    SELECT * FROM read_parquet('{parquet_file}')
-                """)
-                logger.debug(f"Registered table: {table_name}")
-            except Exception as e:
-                logger.error(f"Failed to register table {table_name}: {e}")
-                # Continue with other tables
+    # List of write operations to block
+    write_keywords = [
+        'INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 'TRUNCATE',
+        'RENAME', 'GRANT', 'REVOKE', 'COMMIT', 'ROLLBACK', 'SAVEPOINT'
+    ]
     
-    def _validate_read_only(self, sql: str):
-        """
-        Validate that SQL is read-only.
+    # Check for any write keywords
+    for keyword in write_keywords:
+        if keyword in upper_sql:
+            logger.warning(f"Write operation detected in SQL: {keyword}")
+            raise ReadOnlyViolationError(f"Write operations are not allowed: {keyword}")
+
+
+def query_logs(sql: str) -> Dict[str, Any]:
+    """Execute a SQL query on telemetry logs and return results as JSON."""
+    try:
+        # Validate SQL
+        _validate_sql(sql)
         
-        Args:
-            sql: SQL query string
-            
-        Raises:
-            ReadOnlyViolationError: If write operation detected
-        """
-        # Normalize SQL for checking
-        sql_normalized = sql.strip()
-        if not sql_normalized:
-            return  # Empty query is allowed
+        # Initialize connection if needed
+        conn = _initialize_connection()
         
-        # Check for write operations using multiple approaches
-        sql_upper = sql_normalized.upper()
+        # Execute query
+        result = conn.execute(sql)
         
-        # Check for direct write keywords
-        for keyword in self.WRITE_KEYWORDS:
-            # Check if keyword appears at the beginning or after whitespace
-            if sql_upper.startswith(keyword + ' ') or keyword + ' ' in sql_upper:
-                logger.error(f"Write operation blocked: {sql[:50]}...")
-                raise ReadOnlyViolationError(
-                    f"Write operations are not allowed. Detected: {keyword}"
-                )
+        # Fetch results
+        rows = result.fetchall()
         
-        # Check for specific patterns that indicate write operations
-        write_patterns = [
-            'INSERT INTO', 'UPDATE SET', 'DELETE FROM', 'DROP TABLE',
-            'CREATE TABLE', 'ALTER TABLE', 'TRUNCATE TABLE', 'REPLACE TABLE',
-            'MERGE INTO', 'UPSERT INTO'
-        ]
+        # Get column names
+        columns = result.description
         
-        for pattern in write_patterns:
-            if pattern in sql_upper:
-                logger.error(f"Write operation blocked: {sql[:50]}...")
-                raise ReadOnlyViolationError(
-                    f"Write operations are not allowed. Detected pattern: {pattern}"
-                )
+        # Convert to list of dictionaries
+        data = []
+        for row in rows:
+            row_dict = dict(zip([col[0] for col in columns], row))
+            data.append(row_dict)
         
-        # Additional check for common SQL injection patterns
-        injection_patterns = [
-            "';", "--", "/*", "*/", "UNION SELECT"
-        ]
+        logger.info(f"Query executed successfully: {sql}")
+        return {
+            "success": True,
+            "data": data,
+            "count": len(data)
+        }
         
-        for pattern in injection_patterns:
-            if pattern in sql_upper:
-                logger.error(f"Potential injection attempt blocked: {sql[:50]}...")
-                raise ReadOnlyViolationError(
-                    f"Potential injection attempt blocked: {pattern}"
-                )
-    
-    def query_logs(self, sql: str) -> List[Dict[str, Any]]:
-        """
-        Execute a read-only SQL query.
+    except ReadOnlyViolationError:
+        logger.error("Read-only violation detected")
+        raise
+    except Exception as e:
+        logger.error(f"Query execution failed: {e}")
+        raise QueryEngineError(f"Query execution failed: {e}")
+
+
+def export_to_parquet(data: Dict[str, Any], filename: str) -> None:
+    """Export telemetry data to Parquet format."""
+    try:
+        import pandas as pd
         
-        Args:
-            sql: SQL SELECT query
-            
-        Returns:
-            List of dictionaries with query results
-            
-        Raises:
-            ReadOnlyViolationError: If write operation attempted
-            QueryEngineError: For other query errors
-        """
-        # Validate read-only
-        self._validate_read_only(sql)
+        # Convert data to DataFrame
+        df = pd.DataFrame(data["data"])
         
-        try:
-            # Execute the query
-            result = self.conn.execute(sql).fetchall()
-            columns = [desc[0] for desc in self.conn.description]
-            
-            return [dict(zip(columns, row)) for row in result]
-            
-        except duckdb.Error as e:
-            logger.error(f"Query failed: {e}")
-            raise QueryEngineError(f"Query failed: {e}")
-        except Exception as e:
-            logger.error(f"Unexpected error during query: {e}")
-            raise QueryEngineError(f"Unexpected error: {e}")
-    
-    def get_table_names(self) -> List[str]:
-        """List available tables."""
-        try:
-            result = self.conn.execute(
-                "SELECT table_name FROM information_schema.tables WHERE table_schema='main'"
-            ).fetchall()
-            return [row[0] for row in result]
-        except Exception as e:
-            logger.error(f"Failed to get table names: {e}")
-            return []
-    
-    def close(self):
-        """Close the database connection."""
-        if hasattr(self, 'conn'):
-            self.conn.close()
-            logger.info("QueryEngine connection closed")
+        # Export to Parquet
+        df.to_parquet(filename)
+        
+        logger.info(f"Data exported to Parquet: {filename}")
+    except Exception as e:
+        logger.error(f"Parquet export failed: {e}")
+        raise QueryEngineError(f"Parquet export failed: {e}")
+
+
+def get_telemetry_schema() -> Dict[str, Any]:
+    """Get the schema of the telemetry data."""
+    try:
+        conn = _initialize_connection()
+        result = conn.execute("PRAGMA table_info(logs)")
+        columns = result.fetchall()
+        
+        schema = {
+            "columns": [
+                {"name": col[1], "type": col[2]} for col in columns
+            ]
+        }
+        
+        return schema
+    except Exception as e:
+        logger.error(f"Failed to get schema: {e}")
+        raise QueryEngineError(f"Failed to get schema: {e}")
