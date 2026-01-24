@@ -1,221 +1,224 @@
+"""
+Inference Backend Interface
+
+Defines the contract for all inference backends in HilliumOS.
+Enables hot-swapping between llama.cpp and PowerInfer.
+"""
+
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict, Any, Optional
-import logging
-import threading
-import pathlib
-import pathlib
+from typing import Optional, Dict, Any
 
-# Set up logging
 logger = logging.getLogger(__name__)
 
+
+@dataclass
 class GenerateParams:
-    """Data class for generation parameters."""
-    def __init__(self, max_tokens: int = 100, temperature: float = 0.7, top_p: float = 0.9):
-        self.max_tokens = max_tokens
-        self.temperature = temperature
-        self.top_p = top_p
+    """Parameters for text generation."""
+    max_tokens: int = 512
+    temperature: float = 0.7
+    top_p: float = 0.9
+    top_k: int = 40
+    stop_sequences: tuple = ()
+    seed: Optional[int] = None
+
+
+@dataclass  
+class GenerateResult:
+    """Result from text generation."""
+    text: str
+    tokens_generated: int
+    latency_ms: float
+    finish_reason: str  # "stop", "length", "error"
+
 
 class InferenceBackend(ABC):
-    """Abstract base class for inference backends."""
+    """
+    Abstract base class for inference backends.
     
-    def __init__(self):
-        self.is_loaded = False
-        self._lock = threading.Lock()  # For thread safety
-        
+    All backends must implement these methods:
+    - load_model(): Load model into memory
+    - generate(): Generate text from prompt
+    - unload(): Release model resources
+    - is_loaded(): Check if model is loaded
+    
+    Example:
+        backend = LlamaCppBackend()
+        backend.load_model("/path/to/model.gguf", {})
+        result = backend.generate("Hello", GenerateParams())
+        backend.unload()
+    """
+    
     @abstractmethod
     def load_model(self, path: str, config: Dict[str, Any]) -> None:
-        """Load a model from the given path with the provided configuration.
+        """
+        Load a model from disk.
         
         Args:
-            path: Path to the model file
-            config: Configuration dictionary for the model
+            path: Path to model file (GGUF format)
+            config: Backend-specific configuration
             
         Raises:
-            ValueError: If the path is invalid or model cannot be loaded
-            Exception: For any other loading errors
+            FileNotFoundError: If model file doesn't exist
+            RuntimeError: If loading fails
         """
         pass
     
     @abstractmethod
-    def generate(self, prompt: str, params: GenerateParams) -> str:
-        """Generate a response for the given prompt.
+    def generate(self, prompt: str, params: GenerateParams) -> GenerateResult:
+        """
+        Generate text from prompt.
         
         Args:
-            prompt: The input prompt
+            prompt: Input prompt
             params: Generation parameters
             
         Returns:
-            Generated text
+            GenerateResult with generated text and metadata
             
         Raises:
-            RuntimeError: If generation fails
-            ValueError: If prompt is invalid
+            RuntimeError: If model not loaded or generation fails
         """
         pass
     
     @abstractmethod
     def unload(self) -> None:
-        """Unload the model and free resources.
+        """
+        Unload model and release resources.
         
-        Raises:
-            Exception: For any unloading errors
+        Safe to call multiple times.
         """
         pass
+    
+    @abstractmethod
+    def is_loaded(self) -> bool:
+        """Check if model is currently loaded."""
+        pass
+
 
 class LlamaCppBackend(InferenceBackend):
-    """Implementation of InferenceBackend using llama-cpp-python."""
+    """
+    Default inference backend using llama.cpp.
+    
+    This is the production backend for HilliumOS MVP.
+    """
     
     def __init__(self):
-        super().__init__()
-        self.model = None
-        
-    def _is_test_environment(self) -> bool:
-        """Detect if we're running in a test environment."""
-        import sys
-        return any("pytest" in arg or "test" in arg for arg in sys.argv)
-        
+        self._model = None
+        self._model_path: Optional[str] = None
+    
     def load_model(self, path: str, config: Dict[str, Any]) -> None:
-        """Load a model using llama-cpp-python.
-        
-        Args:
-            path: Path to the model file
-            config: Configuration dictionary for the model
-            
-        Raises:
-            ValueError: If the path is invalid or model cannot be loaded
-            ImportError: If llama-cpp-python is not installed
-            Exception: For any other loading errors
-        """
-        # Validate input
-        if not path or not isinstance(path, str):
-            raise ValueError("Model path must be a non-empty string")
-        
-        # Security check: prevent path traversal attacks
-        try:
-            path_obj = pathlib.Path(path).resolve()
-            # In test environments, we might allow non-existent paths
-            # but in production, we should validate file existence
-            if not path_obj.exists() and not self._is_test_environment():
-                raise ValueError(f"Model file does not exist: {path}")
-        except Exception as e:
-            raise ValueError(f"Invalid model path: {str(e)}")
-        
+        """Load model using llama-cpp-python."""
         try:
             from llama_cpp import Llama
             
-            # Load the model
-            self.model = Llama(
+            self._model = Llama(
                 model_path=path,
-                n_ctx=config.get("n_ctx", 2048),
-                n_threads=config.get("n_threads", None),
-                n_gpu_layers=config.get("n_gpu_layers", 0),
-                verbose=config.get("verbose", False)
+                n_ctx=config.get("n_ctx", 4096),
+                n_gpu_layers=config.get("n_gpu_layers", -1),
+                verbose=config.get("verbose", False),
             )
-            
-            self.is_loaded = True
-            logger.info(f"Successfully loaded model from {path}")
+            self._model_path = path
+            logger.info(f"Loaded model: {path}")
             
         except ImportError:
             logger.error("llama-cpp-python not installed")
-            raise ImportError("llama-cpp-python is required for LlamaCppBackend but not installed")
+            raise RuntimeError("llama-cpp-python is required for LlamaCppBackend")
         except Exception as e:
-            logger.error(f"Failed to load model from {path}: {str(e)}")
-            raise Exception(f"Failed to load model: {str(e)}")
+            logger.error(f"Failed to load model: {e}")
+            raise RuntimeError(f"Model loading failed: {e}")
     
-    def generate(self, prompt: str, params: GenerateParams) -> str:
-        """Generate a response using llama-cpp-python.
+    def generate(self, prompt: str, params: GenerateParams) -> GenerateResult:
+        """Generate text using llama.cpp."""
+        if not self.is_loaded():
+            logger.error("Attempted generation without loaded model")
+            raise RuntimeError("Model not loaded. Call load_model() first.")
         
-        Args:
-            prompt: The input prompt
-            params: Generation parameters
-            
-        Returns:
-            Generated text
-            
-        Raises:
-            RuntimeError: If generation fails
-            ValueError: If prompt is invalid
-        """
-        # Validate input
-        if not prompt or not isinstance(prompt, str):
-            raise ValueError("Prompt must be a non-empty string")
-        
-        # Security check: prevent overly long prompts
-        if len(prompt) > 100000:  # 100KB limit
-            raise ValueError("Prompt exceeds maximum allowed length")
-        
-        if not self.is_loaded:
-            raise RuntimeError("Model must be loaded before generation")
+        import time
+        start = time.perf_counter()
         
         try:
-            if self.model is None:
-                raise RuntimeError("Model not loaded")
-            
-            response = self.model(
+            output = self._model(
                 prompt,
                 max_tokens=params.max_tokens,
                 temperature=params.temperature,
-                top_p=params.top_p
+                top_p=params.top_p,
+                top_k=params.top_k,
+                stop=list(params.stop_sequences) if params.stop_sequences else None,
             )
             
-            generated_text = response.get("choices", [{}])[0].get("text", "")
-            logger.info("Generation completed successfully")
-            return generated_text
+            elapsed_ms = (time.perf_counter() - start) * 1000
+            
+            return GenerateResult(
+                text=output["choices"][0]["text"],
+                tokens_generated=output["usage"]["completion_tokens"],
+                latency_ms=elapsed_ms,
+                finish_reason=output["choices"][0]["finish_reason"],
+            )
             
         except Exception as e:
-            logger.error(f"Generation failed: {str(e)}")
-            raise RuntimeError(f"Generation failed: {str(e)}")
+            logger.error(f"Generation failed: {e}")
+            raise RuntimeError(f"Generation failed: {e}")
     
     def unload(self) -> None:
-        """Unload the model and free resources."""
-        try:
-            with self._lock:  # Thread-safe unloading
-                self.model = None
-                self.is_loaded = False
-                logger.info("Model unloaded successfully")
-        except Exception as e:
-            logger.error(f"Error unloading model: {str(e)}")
-            raise Exception(f"Error unloading model: {str(e)}")
+        """Unload model."""
+        if self._model is not None:
+            del self._model
+            self._model = None
+            self._model_path = None
+            logger.info("Model unloaded")
+    
+    def is_loaded(self) -> bool:
+        return self._model is not None
+
 
 class PowerInferBackend(InferenceBackend):
-    """Stub implementation of InferenceBackend for PowerInfer backend.
+    """
+    Future backend for sparse inference.
     
-    This is a placeholder that raises NotImplementedError to indicate
-    that PowerInfer backend is not yet implemented.
+    NOT IMPLEMENTED for MVP. Returns NotImplementedError.
+    See ADR-015 for architecture details.
     """
     
     def load_model(self, path: str, config: Dict[str, Any]) -> None:
-        """Raise NotImplementedError.
-        
-        Args:
-            path: Path to the model file (unused)
-            config: Configuration dictionary (unused)
-            
-        Raises:
-            NotImplementedError: Always raised to indicate PowerInfer is not implemented
-        """
-        logger.error("PowerInfer backend is not yet implemented")
-        raise NotImplementedError("PowerInfer backend is not yet implemented")
+        logger.warning("PowerInferBackend is not implemented for MVP")
+        raise NotImplementedError(
+            "PowerInfer integration is planned for post-MVP (v8.6+). "
+            "Use LlamaCppBackend for current implementation."
+        )
     
-    def generate(self, prompt: str, params: GenerateParams) -> str:
-        """Raise NotImplementedError.
-        
-        Args:
-            prompt: The input prompt (unused)
-            params: Generation parameters (unused)
-            
-        Raises:
-            NotImplementedError: Always raised to indicate PowerInfer is not implemented
-        """
-        logger.error("PowerInfer backend is not yet implemented")
-        raise NotImplementedError("PowerInfer backend is not yet implemented")
+    def generate(self, prompt: str, params: GenerateParams) -> GenerateResult:
+        raise NotImplementedError("PowerInferBackend not implemented")
     
     def unload(self) -> None:
-        """Raise NotImplementedError.
+        pass  # Nothing to unload
+    
+    def is_loaded(self) -> bool:
+        return False
+
+
+def get_backend(backend_type: str = "llama.cpp") -> InferenceBackend:
+    """
+    Factory function to get inference backend.
+    
+    Args:
+        backend_type: "llama.cpp" or "powerinfer"
         
-        Raises:
-            NotImplementedError: Always raised to indicate PowerInfer is not implemented
-        """
-        logger.error("PowerInfer backend is not yet implemented")
-        raise NotImplementedError("PowerInfer backend is not yet implemented")
+    Returns:
+        InferenceBackend instance
+        
+    Raises:
+        ValueError: If backend_type unknown
+    """
+    backends = {
+        "llama.cpp": LlamaCppBackend,
+        "llama_cpp": LlamaCppBackend,
+        "powerinfer": PowerInferBackend,
+    }
+    
+    if backend_type.lower() not in backends:
+        logger.error(f"Unknown backend: {backend_type}")
+        raise ValueError(f"Unknown backend: {backend_type}. Available: {list(backends.keys())}")
+    
+    return backends[backend_type.lower()]()

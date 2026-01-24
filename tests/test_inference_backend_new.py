@@ -1,8 +1,5 @@
-"""Unit tests for Inference Backend Interface."""
-
 import pytest
 from unittest.mock import Mock, patch
-
 from loqus_core.inference.backend import (
     LlamaCppBackend,
     PowerInferBackend,
