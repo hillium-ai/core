@@ -9,7 +9,7 @@ The cognitive layer (`loqus_core`) requires Python 3.11+ with optimized librarie
 | Category | Package | Purpose | Hardware Optimization |
 |----------|---------|---------|-----------------------|
 | **Observability** | `duckdb>=1.0.0` | In-process SQL engine | Thread-safe, analytical |
-| **Security** | `sqlparse` | SQL validation & sanitization | Deterministic parsing |
+| **Security** | `sqlparse`, `RestrictedPython` | SQL & Code sanitization | Deterministic parsing & sandboxing |
 | **Data Engine** | `polars`, `pyarrow` | High-performance telemetry storage | SIMD-accelerated Parquet |
 | **Audio** | `faster-whisper`, `silero-vad` | Real-time speech-to-text | GPU/Metal acceleration |
 | **Synthesis** | `piper-tts` | Ultra-low latency voice synthesis | Local-first inference |
