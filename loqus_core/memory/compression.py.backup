@@ -128,7 +128,7 @@ class MelodiCompressor(MemoryCompressor):
 
 def get_compressor(compressor_type: str = "noop") -> MemoryCompressor:
     """Factory function to get a compressor instance."""
-    if compressor_type == "noop":
+    if compressor_type == "noop" or compressor_type == "none":
         return NoOpCompressor()
     elif compressor_type == "melodi":
         return MelodiCompressor()

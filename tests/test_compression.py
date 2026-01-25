@@ -41,13 +41,17 @@ class TestCompression(unittest.TestCase):
         
         # Check that compression worked
         self.assertIsInstance(compressed, CompressedContext)
-        self.assertEqual(compressed.data, b"")  # Will be actual serialized data
+        # Check that data is not empty (it should be serialized)
+        self.assertTrue(len(compressed.data) > 0)
         
         # Decompress
         decompressed = compressor.decompress(compressed)
         
         # Check that decompression worked
         self.assertIsInstance(decompressed, list)
+        # Check that we got back the same messages
+        self.assertEqual(len(decompressed), len(messages))
+        self.assertEqual(decompressed[0].content, messages[0].content)
     
     def test_get_compressor_factory(self):
         # Test factory function
