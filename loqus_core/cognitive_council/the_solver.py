@@ -3,8 +3,8 @@ import ast
 from RestrictedPython import compile_restricted
 
 class TheSolver:
-    def __init__(self):
-        self.max_retries = 3
+    def __init__(self, max_retries=3):
+        self.max_retries = max_retries
 
     def _validate_query(self, query):
         """Validate and sanitize input query"""
