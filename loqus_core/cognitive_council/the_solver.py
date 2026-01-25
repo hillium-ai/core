@@ -6,7 +6,7 @@ import ast
 import logging
 import math
 import numpy
-from RestrictedPython import compile_restricted
+import math
 import numpy
 from RestrictedPython import compile_restricted
 
