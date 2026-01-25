@@ -7,6 +7,7 @@ from typing import List, Dict, Any, Optional
 import logging
 
 from loqus_core.hippo import HippoLink, AssociativeCoreHandle
+from loqus_core.memory.compression import get_compressor, Message
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,9 @@ class ContinuumMemorySystem:
 
         # Level 3: Episodic (deferred in MVP)
         self.episodic_enabled = False
+
+        # Compression support
+        self.compressor = get_compressor()
 
         logger.info("ContinuumMemorySystem initialized (4 levels)")
 
@@ -141,5 +145,48 @@ class ContinuumMemorySystem:
         if 2 in levels:
             # Level 2: Working memory
             results["level2"] = []
-
         return results
+
+    # === COMPRESSION HOOKS ===
+
+    def compress_context(self, messages: List[Message]) -> str:
+        """
+        Compress a list of messages using the configured compressor.
+        
+        Args:
+            messages: List of Message objects to compress
+            
+        Returns:
+            Compressed string representation
+        """
+        try:
+            compressed = self.compressor.compress(messages)
+            return compressed.summary
+        except Exception as e:
+            logger.error(f"Compression failed: {e}")
+            # Return original content if compression fails
+            return "\n".join(f"[{m.role}]: {m.content}" for m in messages)
+
+    def decompress_context(self, compressed_context: str) -> List[Message]:
+        """
+        Decompress a compressed context back to messages.
+        
+        Args:
+            compressed_context: String representation of compressed context
+            
+        Returns:
+            List of Message objects
+        """
+        try:
+            # For MVP, we'll use the NoOpCompressor which returns a single system message
+            # In a real implementation, we'd reconstruct the original messages
+            return [Message(
+                role="system",
+                content=f"[Decompressed context]\n{compressed_context}",
+                timestamp=0.0,
+            )]
+        except Exception as e:
+            logger.error(f"Decompression failed: {e}")
+            # Return empty list if decompression fails
+            return []
+
