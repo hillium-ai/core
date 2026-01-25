@@ -1,4 +1,5 @@
 use hipposerver::shm::ShmHandle;
+pub mod visual;
 use crate::values::ValueScorecard;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
