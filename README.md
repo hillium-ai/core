@@ -19,7 +19,7 @@
 
 ## 🎯 The Mission
 
-**HilliumOS Core** is the high-performance, biologically-inspired kernel designed for the next generation of autonomous robots. It provides a multi-layer architecture that combines the industrial safety of **Rust** with the cognitive flexibility of **Python**, creating a deterministic and trustworthy bridge between digital intelligence and physical motion.
+**HilliumOS Core** is a high-performance, biologically-inspired kernel designed for autonomous robots and kinetic systems. It provides a multi-layer architecture that combines the industrial safety of **Rust** with the cognitive flexibility of **Python**, creating a deterministic and trustworthy bridge between digital intelligence and physical motion on real hardware.
 
 ---
 
@@ -36,47 +36,47 @@ graph TD
     E -->|Physical Actuation| F[Hardware/Sim]
 ```
 
-### 🔭 Technological Stack (v9.5 - Embedding Intelligence)
+### 🔭 Technological Stack (MVP Core)
 
-Our stack is curated for maximum reliability and local-first execution (No Cloud dependencies).
+Our stack is curated for maximum reliability and local-first execution, optimized for edge hardware (Jetson Orin, Mac Studio).
 
 | Component | Technology | Primary Libraries | Usage |
 |-----------|------------|-------------------|-------|
-| **Perception** | Python/ONNX | `faster-whisper`, `silero-vad`, `DINOv2` | Ears, Eyes, & Audio/Visual Validation |
-| **Cognition** | Python/LLM | `LangChain`, `sqlparse`, `duckdb` | The Cognitive Council & SQL-based Observability |
+| **Perception** | Python/ONNX | `faster-whisper`, `silero-vad`, `DINOv2` | Real-time Senses & Visual Validation |
+| **Cognition** | Python/LLM | `LangChain`, `sqlparse`, `duckdb` | The Cognitive Council & SQL Observability |
 | **Memory** | Rust | `sled`, `qdrant`, `rkyv`, `Zero-Copy IPC` | 4-Level Hierarchy (Sensory to Episodic) |
 | **Safety** | Rust | `Aegis L7`, `VisualValidator` | Hallucination Prevention & Real-time Gating |
 | **Control** | Rust | `MuJoCo`, `PyO3`, `ort` | Trajectory Planning & Hardware Abstraction |
 
 ---
 
-## 🚀 One-Command Installation
+## 🚀 Installation & Hardware Readiness
 
-We provide a specialized bootstrap script that automatically detects your hardware and configures the environment (Metal for Mac Studio, CUDA for Jetson Orin).
+The system is designed to run natively on Mac and Linux. We provide a bootstrap script that configures your hardware's specific accelerators (Metal for Mac, CUDA for Jetson/Linux).
 
 ### Prerequisites
-- **Docker** (Recommended for Hillium Forge development)
+- **Hardware**: Mac M1/M2/M3 or NVIDIA Jetson Orin (Recommended)
 - **Rust 1.75+**
 - **Python 3.11+**
 
-### Bootstrap Setup
+### Native Bootstrap
 ```bash
 # Clone the repository
 git clone https://github.com/hillium-ai/hillium-core.git
 cd hillium-core
 
-# Universal Bootstrap (Detects macOS/Linux/Forge)
+# Universal Bootstrap (Configures Metal/CUDA automatically)
 ./scripts/setup_dev.sh
 ```
 
-> [!TIP]
-> **Hillium Forge**: If you are using our Docker-based development environment, the bootstrap script will automatically handle PEP 668 restrictions and install system dependencies inside the container.
+> [!NOTE]
+> While we provide Docker support via `infrastructure/docker/` for isolated testing, the system is optimized for **native execution** to ensure low-latency access to hardware sensors and motor controllers.
 
 ---
 
 ## 🛠️ Detailed Documentation
 
-- **[DEPENDENCIES.md](DEPENDENCIES.md)**: Full manifest of all Python, Rust, and System requirements mapped to Work Packages.
+- **[DEPENDENCIES.md](DEPENDENCIES.md)**: Master manifest of Python, Rust, and System requirements for real-hardware deployment.
 - **[DEVELOPMENT.md](DEVELOPMENT.md)**: Guidelines for TDD, conventional commits, and CI/CD pipelines.
 - **[CLAUDE.md](CLAUDE.md)**: Cultural and technical context for AI agents working on this project.
 
@@ -84,14 +84,14 @@ cd hillium-core
 
 ## 🏁 Verification & Testing
 
-HilliumOS Core is built with a **Zero Tolerance for regressions** policy.
+HilliumOS Core is built with a **Zero Tolerance for regressions** policy on both simulated and real hardware.
 
 ```bash
 # Run the complete test suite
 pytest tests/ -v
 cargo test --all
 
-# Audit the technology stack installation
+# Audit the environment setup
 python3 scripts/verify_env.py
 ```
 
@@ -106,6 +106,6 @@ Join the revolution in Kinetic AI. We follow the **Open Core** philosophy.
 - 📄 [MIT License](LICENSE)
 
 <p align="center">
-  <strong>HilliumOS Core v0.1.0</strong><br>
+  <strong>HilliumOS Core</strong><br>
   Built with ❤️ for the future of Kinetic AI
 </p>
