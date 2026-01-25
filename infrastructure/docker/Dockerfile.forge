@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     cmake \
     libssl-dev \
     protobuf-compiler \
+    ninja-build \
     pkg-config \
     libasound2-dev portaudio19-dev \
     espeak-ng \
@@ -34,8 +35,7 @@ RUN pip3 install --no-cache-dir --break-system-packages \
     pyaudio faster-whisper torch numpy \
     silero-vad webrtcvad loguru pydantic \
     scipy sounddevice python-dotenv \
-    scipy sounddevice python-dotenv \
-    langchain
+    langchain duckdb sqlparse polars pyarrow textual watchfiles
 
 # Install Rust tools
 RUN rustup component add clippy rustfmt

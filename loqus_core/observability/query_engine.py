@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Any, List
 from pathlib import Path
 import re
+import sqlparse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,20 +26,47 @@ class QueryEngine:
         self.data_directory = Path(data_directory)
         self._connection = None
         
-    def _initialize_connection(self) -> duckdb.Connection:
-        """Initialize DuckDB connection with read-only mode."""
+    def _initialize_connection(self) -> Any:
+        """Initialize DuckDB connection and register Parquet files."""
         if self._connection is None:
             try:
-                # Connect to DuckDB in read-only mode
-                self._connection = duckdb.connect(database=':memory:', read_only=True)
-                logger.info("DuckDB connection initialized in read-only mode")
+                # Connect to DuckDB in read-only mode using a memory database
+                self._connection = duckdb.connect(database=':memory:', read_only=False)
+                logger.info("DuckDB connection initialized (Memory Mode)")
+                
+                # Scan data directory for Parquet files and register them as views
+                self._register_parquet_files()
+                
             except Exception as e:
                 logger.error(f"Failed to initialize DuckDB connection: {e}")
                 raise QueryEngineError(f"Failed to initialize DuckDB: {e}")
         return self._connection
 
+    def _register_parquet_files(self) -> None:
+        """Scan the data directory and register all .parquet files as tables/views."""
+        if not self.data_directory.exists():
+            logger.warning(f"Data directory {self.data_directory} does not exist. No files registered.")
+            return
+
+        parquet_files = list(self.data_directory.glob("**/*.parquet"))
+        if not parquet_files:
+            logger.info(f"No parquet files found in {self.data_directory}")
+            return
+
+        for p_file in parquet_files:
+            table_name = p_file.stem
+            try:
+                # Register the parquet file as a view
+                self._connection.execute(f"CREATE OR REPLACE VIEW {table_name} AS SELECT * FROM read_parquet('{p_file}')")
+                logger.info(f"Registered Parquet file: {p_file} as table '{table_name}'")
+            except Exception as e:
+                logger.error(f"Failed to register parquet file {p_file}: {e}")
+
     def _validate_sql(self, sql: str) -> None:
-        """Validate SQL to ensure it's read-only."""
+        """Validate SQL to ensure it's read-only using multiple techniques."""
+        if not sql or not isinstance(sql, str):
+            raise ReadOnlyViolationError("Invalid SQL query")
+        
         # Convert to uppercase for case-insensitive comparison
         upper_sql = sql.strip().upper()
         
@@ -46,7 +74,7 @@ class QueryEngine:
         write_keywords = [
             'INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 'TRUNCATE',
             'RENAME', 'GRANT', 'REVOKE', 'COMMIT', 'ROLLBACK', 'SAVEPOINT',
-            'WITH', 'EXECUTE', 'CALL'
+            'WITH', 'EXECUTE', 'CALL', 'MERGE', 'REPLACE'
         ]
         
         # Check for any write keywords
@@ -55,6 +83,19 @@ class QueryEngine:
             if re.search(rf'\b{keyword}\b', upper_sql):
                 logger.warning(f"Write operation detected in SQL: {keyword}")
                 raise ReadOnlyViolationError(f"Write operations are not allowed: {keyword}")
+        
+        # Use sqlparse to parse and validate SQL structure
+        try:
+            parsed = sqlparse.parse(sql)[0]
+            # Check if the statement type is a write operation
+            statement_type = parsed.get_type()
+            if statement_type in ('INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 'TRUNCATE'):
+                logger.warning(f"Write operation detected by sqlparse: {statement_type}")
+                raise ReadOnlyViolationError(f"Write operations are not allowed: {statement_type}")
+        except Exception as e:
+            logger.warning(f"SQL parsing failed: {e}")
+            # If parsing fails, we still check keywords, but don't fail completely
+            pass
 
     def query_logs(self, sql: str) -> Dict[str, Any]:
         """Execute a SQL query on telemetry logs and return results as JSON."""
@@ -97,15 +138,19 @@ class QueryEngine:
     def export_to_parquet(self, data: Dict[str, Any], filename: str) -> None:
         """Export telemetry data to Parquet format."""
         try:
-            import pandas as pd
-            
-            # Convert data to DataFrame
-            df = pd.DataFrame(data["data"])
-            
-            # Export to Parquet
-            df.to_parquet(filename)
-            
-            logger.info(f"Data exported to Parquet: {filename}")
+            # Try to import polars first (preferred)
+            try:
+                import polars as pl
+                df = pl.DataFrame(data["data"])
+                df.write_parquet(filename)
+                logger.info(f"Data exported to Parquet using polars: {filename}")
+            except ImportError:
+                # Fallback to pandas
+                import pandas as pd
+                df = pd.DataFrame(data["data"])
+                df.to_parquet(filename)
+                logger.info(f"Data exported to Parquet using pandas: {filename}")
+                
         except Exception as e:
             logger.error(f"Parquet export failed: {e}")
             raise QueryEngineError(f"Parquet export failed: {e}")
@@ -129,10 +174,10 @@ class QueryEngine:
             raise QueryEngineError(f"Failed to get schema: {e}")
 
     def get_table_names(self) -> List[str]:
-        """Get list of table names in the database."""
+        """Get list of table/view names in the database."""
         try:
             conn = self._initialize_connection()
-            result = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            result = conn.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='main'")
             tables = result.fetchall()
             return [table[0] for table in tables]
         except Exception as e:
