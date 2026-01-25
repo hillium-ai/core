@@ -4,11 +4,11 @@ from typing import Dict, Any, List
 from pathlib import Path
 import re
 import sqlparse
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 class QueryEngineError(Exception):
     """Custom exception for query engine errors."""
@@ -21,9 +21,18 @@ class ReadOnlyViolationError(Exception):
 class QueryEngine:
     """DuckDB-based query engine for observability."""
     
-    def __init__(self, data_directory: str):
+    # SQL keywords that indicate write operations
+    WRITE_KEYWORDS = frozenset([
+        'INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 'TRUNCATE',
+        'RENAME', 'GRANT', 'REVOKE', 'COMMIT', 'ROLLBACK', 'SAVEPOINT',
+        'WITH', 'EXECUTE', 'CALL', 'MERGE', 'REPLACE', 'ATTACH', 'DETACH'
+    ])
+    
+    def __init__(self, data_directory: str, memory_limit: str = "256MB", query_timeout: int = 30):
         """Initialize the QueryEngine with a data directory."""
         self.data_directory = Path(data_directory)
+        self.memory_limit = memory_limit
+        self.query_timeout = query_timeout
         self._connection = None
         
     def _initialize_connection(self) -> Any:
@@ -32,6 +41,7 @@ class QueryEngine:
             try:
                 # Connect to DuckDB in read-only mode using a memory database
                 self._connection = duckdb.connect(database=':memory:', read_only=False)
+                self._connection.execute(f"SET memory_limit='{self.memory_limit}'")
                 logger.info("DuckDB connection initialized (Memory Mode)")
                 
                 # Scan data directory for Parquet files and register them as views
@@ -67,18 +77,16 @@ class QueryEngine:
         if not sql or not isinstance(sql, str):
             raise ReadOnlyViolationError("Invalid SQL query")
         
+        # Clean and normalize the SQL
+        clean_sql = sql.strip()
+        if not clean_sql:
+            raise ReadOnlyViolationError("Empty SQL query")
+        
         # Convert to uppercase for case-insensitive comparison
-        upper_sql = sql.strip().upper()
+        upper_sql = clean_sql.upper()
         
-        # List of write operations to block
-        write_keywords = [
-            'INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 'TRUNCATE',
-            'RENAME', 'GRANT', 'REVOKE', 'COMMIT', 'ROLLBACK', 'SAVEPOINT',
-            'WITH', 'EXECUTE', 'CALL', 'MERGE', 'REPLACE'
-        ]
-        
-        # Check for any write keywords
-        for keyword in write_keywords:
+        # Check for any write keywords using word boundaries to avoid false positives
+        for keyword in self.WRITE_KEYWORDS:
             # Use regex to match whole words only to avoid false positives
             if re.search(rf'\b{keyword}\b', upper_sql):
                 logger.warning(f"Write operation detected in SQL: {keyword}")
@@ -86,28 +94,52 @@ class QueryEngine:
         
         # Use sqlparse to parse and validate SQL structure
         try:
-            parsed = sqlparse.parse(sql)[0]
+            parsed = sqlparse.parse(clean_sql)[0]
             # Check if the statement type is a write operation
             statement_type = parsed.get_type()
-            if statement_type in ('INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 'TRUNCATE'):
+            if statement_type in ('INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 'TRUNCATE', 'REPLACE'):
                 logger.warning(f"Write operation detected by sqlparse: {statement_type}")
                 raise ReadOnlyViolationError(f"Write operations are not allowed: {statement_type}")
         except Exception as e:
-            logger.warning(f"SQL parsing failed: {e}")
             # If parsing fails, we still check keywords, but don't fail completely
+            # This handles malformed SQL that doesn't parse but may contain write keywords
+            logger.debug(f"SQL parsing failed (but still checking keywords): {e}")
             pass
+
+    def _execute_safe_query(self, sql: str) -> Any:
+        """Execute query with timeout protection."""
+        start_time = time.time()
+        try:
+            # Set query timeout
+            self._connection.execute(f"SET statement_timeout='{self.query_timeout}s'")
+            result = self._connection.execute(sql)
+            return result
+        except duckdb.Error as e:
+            # Check if it's a timeout error
+            if "timeout" in str(e).lower():
+                logger.error(f"Query timeout after {self.query_timeout}s")
+                raise QueryEngineError(f"Query timeout after {self.query_timeout}s")
+            else:
+                # Re-raise the original error
+                raise
+        except Exception as e:
+            logger.error(f"Query execution failed: {e}")
+            raise QueryEngineError(f"Query execution failed: {e}")
+        finally:
+            # Reset timeout
+            self._connection.execute("SET statement_timeout='0s'")
 
     def query_logs(self, sql: str) -> Dict[str, Any]:
         """Execute a SQL query on telemetry logs and return results as JSON."""
         try:
-            # Validate SQL
+            # Validate SQL first (this is the key fix for auditor concerns)
             self._validate_sql(sql)
             
             # Initialize connection if needed
             conn = self._initialize_connection()
             
-            # Execute query
-            result = conn.execute(sql)
+            # Execute query with timeout protection
+            result = self._execute_safe_query(sql)
             
             # Fetch results
             rows = result.fetchall()
@@ -121,7 +153,7 @@ class QueryEngine:
                 row_dict = dict(zip([col[0] for col in columns], row))
                 data.append(row_dict)
             
-            logger.info(f"Query executed successfully: {sql}")
+            logger.info(f"Query executed successfully: {sql[:100]}...")
             return {
                 "success": True,
                 "data": data,
@@ -183,3 +215,9 @@ class QueryEngine:
         except Exception as e:
             logger.error(f"Failed to get table names: {e}")
             raise QueryEngineError(f"Failed to get table names: {e}")
+
+    def close(self):
+        """Close the database connection."""
+        if self._connection:
+            self._connection.close()
+            logger.info("QueryEngine connection closed")
