@@ -11,224 +11,101 @@
   <br /><br />
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
   <img src="https://img.shields.io/badge/status-MVP%20Development-orange.svg" alt="Status">
-  <img src="https://img.shields.io/badge/rust-1.70+-orange.svg" alt="Rust">
-  <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python">
+  <img src="https://img.shields.io/badge/rust-1.75+-orange.svg" alt="Rust">
+  <img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python">
 </p>
 
 ---
 
-**HilliumOS Core** is the high-performance kernel that powers embodied AI agents. Built with Rust for safety and performance, with Python bindings for cognitive processing, it provides the fundamental infrastructure for robots and kinetic AI systems to operate safely and efficiently in the real world.
+## 🎯 The Mission
 
-## 🎯 Overview
-
-HilliumOS Core solves the challenge of integrating advanced AI reasoning with real-time physical control by providing a biologically-inspired architecture that separates concerns while enabling ultra-low-latency communication between components.
-
-### Core Architecture
-
-```
-┌─────────────────────────────────────────────┐
-│         loqusCore (Cognitive Layer)         │
-│              Python + LangChain             │
-│  - Cognitive Council (multi-agent reasoning)│
-│  - WhoIAm (identity and values)             │
-│  - Nested Learning (self-improvement)       │
-├─────────────────────────────────────────────┤
-│      HippoServer (Memory + IPC Layer)       │
-│                   Rust                      │
-│  - Shared Memory IPC (<10µs latency)        │
-│  - Working Memory Manager                   │
-│  - Associative Core (fast weights)          │
-├─────────────────────────────────────────────┤
-│        Aegis Core (Safety Layer)            │
-│                   Rust                      │
-│  - 7-Layer Safety Framework                 │
-│  - Value Alignment Verification             │
-│  - Real-time Safety Monitoring              │
-├─────────────────────────────────────────────┤
-│      Motor Cortex (Control Layer)           │
-│                   Rust                      │
-│  - Real-time Motor Control                  │
-│  - Trajectory Planning                      │
-│  - Hardware Abstraction Layer               │
-└─────────────────────────────────────────────┘
-```
-
-### Key Features
-
-- 🚀 **High Performance**: Rust-based core with <10µs IPC latency
-- 🛡️ **Safety First**: Multi-layer safety framework with value alignment
-- 🧠 **Cognitive Flexibility**: Python-based reasoning with LLM integration
-- 🤖 **Embodied AI**: Designed for physical robots and kinetic agents
-- ⚡ **Real-time**: Deterministic motor control for physical actuation
-- 🔧 **Cross-platform**: Supports macOS (dev) and Linux ARM64 (Jetson deployment)
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **Rust** 1.70+ (`rustup`)
-- **Python** 3.10+
-- **Docker** (optional, for development)
-
-### Build from Source
-
-```bash
-# Clone the repository
-git clone https://github.com/hillium-ai/core.git
-cd core
-
-# Build all Rust components
-cargo build --release
-
-# Run tests
-cargo test --all
-
-# Check code quality
-cargo clippy --all -- -D warnings
-cargo fmt --all --check
-```
-
-### Cross-Compilation for NVIDIA Jetson
-
-```bash
-# Add ARM64 Linux target
-rustup target add aarch64-unknown-linux-gnu
-
-# Build for Jetson Orin
-cargo build --release --target aarch64-unknown-linux-gnu
-```
-
-## 📦 Repository Structure
-
-```
-hillium-core/
-├── hipposerver/          # Shared memory & cognitive state (Rust)
-├── loqus_core/           # Cognitive processing engine (Python)
-├── motor_cortex/         # Motor control system (Rust)
-├── aegis_core/           # Safety framework (Rust)
-├── common/               # Shared utilities and types
-└── examples/             # Usage examples and demos
-```
-
-## 🧪 Development
-
-### Running Tests
-
-```bash
-# All tests
-cargo test --all
-
-# Specific component
-cargo test -p hipposerver
-
-# Integration tests
-cargo test --all --features integration
-
-# Benchmarks
-cargo bench
-```
-
-### Code Quality Standards
-
-This project maintains strict quality standards:
-
-- ✅ Zero compiler warnings
-- ✅ `cargo clippy` passes with `-D warnings`
-- ✅ `rustfmt` enforced formatting
-- ✅ Comprehensive test coverage
-- ✅ All public APIs documented
-
-## 🏗️ Technology Stack
-
-- **Core Language**: Rust (memory safety, performance)
-- **Cognitive Layer**: Python (flexibility, AI/ML ecosystem)
-- **Async Runtime**: Tokio (high-performance async I/O)
-- **Python Bindings**: PyO3 (zero-copy Rust ↔ Python)
-- **Storage**: Sled (embedded DB), Qdrant (vectors), Neo4j (graphs)
-- **Serialization**: Rkyv (zero-copy), Pydantic (validation)
-- **AI/ML**: LangChain, NumPy, custom architectures
-
-## 🎯 Target Platforms
-
-- **Development**: macOS (Apple Silicon + Intel)
-- **Production**: Linux ARM64 (NVIDIA Jetson Orin)
-- **Simulation**: Linux x86_64
-
-## 📖 Documentation
-
-- [Architecture Overview](docs/architecture/OVERVIEW.md) *(coming soon)*
-- [API Reference](docs/api/) *(coming soon)*
-- [Examples](examples/) *(coming soon)*
-
-## 🤝 Contributing
-
-We welcome contributions from the community! Whether it's bug fixes, new features, documentation, or examples, we appreciate your help in building the future of embodied AI.
-
-### Development Workflow
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Make** your changes
-4. **Test** thoroughly (`cargo test --all`)
-5. **Lint** your code (`cargo clippy --all -- -D warnings && cargo fmt --all --check`)
-6. **Commit** with clear messages (`git commit -m 'Add amazing feature'`)
-7. **Push** to your fork (`git push origin feature/amazing-feature`)
-8. **Open** a Pull Request
-
-### Contribution Guidelines
-
-- Follow Rust best practices and idioms
-- Maintain high code quality (zero warnings policy)
-- Write tests for new functionality
-- Document public APIs
-- Keep commits atomic and well-described
-
-For detailed guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md) *(coming soon)*
-
-## 🌍 Community
-
-Join the conversation and connect with other builders:
-
-- 💬 [Join our Discord Server](https://discord.gg/n7ChqvPWgR)
-- 🐦 [Follow us on X/Twitter](https://x.com/hilliumai)
-- 🌐 [Visit Hillium.ai](https://www.hillium.ai)
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## ⚙️ Configuration
-
-The system supports switching between different inference backends:
-
-- `llama.cpp` - Uses llama-cpp-python for model inference (default)
-- `powerinfer` - Placeholder for PowerInfer backend (not yet implemented)
-
-### Usage
-
-To configure the backend, set the `backend_type` parameter when initializing `NativeModelManager`:
-
-```python
-from loqus_core.inference.manager import NativeModelManager
-
-# Use llama.cpp backend (default)
-manager = NativeModelManager(backend_type="llama.cpp")
-
-# Use powerinfer backend (placeholder)
-manager = NativeModelManager(backend_type="powerinfer")
-```
-
-## 🔗 Links
-
-- **Repository**: https://github.com/hillium-ai/core
-- **Issues**: https://github.com/hillium-ai/core/issues
-- **Pull Requests**: https://github.com/hillium-ai/core/pulls
-- **Website**: https://www.hillium.ai
+**HilliumOS Core** is the high-performance, biologically-inspired kernel designed for the next generation of autonomous robots. It provides a multi-layer architecture that combines the industrial safety of **Rust** with the cognitive flexibility of **Python**, creating a deterministic and trustworthy bridge between digital intelligence and physical motion.
 
 ---
 
+## 🧠 Core Architecture
+
+HilliumOS is organized into specialized "Cores" that mimic the human nervous system:
+
+```mermaid
+graph TD
+    A[Aura Engine - Perception] -->|Sensory Buffer| B[HippoServer - Memory]
+    C[LoqusCore - Cognition] <-->|Context/Retrieval| B
+    C -->|ActionPlan| D[Aegis Core - Safety]
+    D -->|Validated Command| E[Motor Cortex - Control]
+    E -->|Physical Actuation| F[Hardware/Sim]
+```
+
+### 🔭 Technological Stack (v9.5 - Embedding Intelligence)
+
+Our stack is curated for maximum reliability and local-first execution (No Cloud dependencies).
+
+| Component | Technology | Primary Libraries | Usage |
+|-----------|------------|-------------------|-------|
+| **Perception** | Python/ONNX | `faster-whisper`, `silero-vad`, `DINOv2` | Ears, Eyes, & Audio/Visual Validation |
+| **Cognition** | Python/LLM | `LangChain`, `sqlparse`, `duckdb` | The Cognitive Council & SQL-based Observability |
+| **Memory** | Rust | `sled`, `qdrant`, `rkyv`, `Zero-Copy IPC` | 4-Level Hierarchy (Sensory to Episodic) |
+| **Safety** | Rust | `Aegis L7`, `VisualValidator` | Hallucination Prevention & Real-time Gating |
+| **Control** | Rust | `MuJoCo`, `PyO3`, `ort` | Trajectory Planning & Hardware Abstraction |
+
+---
+
+## 🚀 One-Command Installation
+
+We provide a specialized bootstrap script that automatically detects your hardware and configures the environment (Metal for Mac Studio, CUDA for Jetson Orin).
+
+### Prerequisites
+- **Docker** (Recommended for Hillium Forge development)
+- **Rust 1.75+**
+- **Python 3.11+**
+
+### Bootstrap Setup
+```bash
+# Clone the repository
+git clone https://github.com/hillium-ai/hillium-core.git
+cd hillium-core
+
+# Universal Bootstrap (Detects macOS/Linux/Forge)
+./scripts/setup_dev.sh
+```
+
+> [!TIP]
+> **Hillium Forge**: If you are using our Docker-based development environment, the bootstrap script will automatically handle PEP 668 restrictions and install system dependencies inside the container.
+
+---
+
+## 🛠️ Detailed Documentation
+
+- **[DEPENDENCIES.md](DEPENDENCIES.md)**: Full manifest of all Python, Rust, and System requirements mapped to Work Packages.
+- **[DEVELOPMENT.md](DEVELOPMENT.md)**: Guidelines for TDD, conventional commits, and CI/CD pipelines.
+- **[CLAUDE.md](CLAUDE.md)**: Cultural and technical context for AI agents working on this project.
+
+---
+
+## 🏁 Verification & Testing
+
+HilliumOS Core is built with a **Zero Tolerance for regressions** policy.
+
+```bash
+# Run the complete test suite
+pytest tests/ -v
+cargo test --all
+
+# Audit the technology stack installation
+python3 scripts/verify_env.py
+```
+
+---
+
+## 🤝 Contributing & Community
+
+Join the revolution in Kinetic AI. We follow the **Open Core** philosophy.
+
+- 💬 [Join Discord](https://discord.gg/n7ChqvPWgR)
+- 🌐 [Visit Hillium.ai](https://www.hillium.ai)
+- 📄 [MIT License](LICENSE)
+
 <p align="center">
   <strong>HilliumOS Core v0.1.0</strong><br>
-  Status: 🚧 MVP Development<br>
   Built with ❤️ for the future of Kinetic AI
 </p>
