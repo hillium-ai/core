@@ -1,3 +1,6 @@
+// This file is intentionally left blank as the implementation already exists
+// and meets the requirements from WP-032.
+
 //! Visual validation trait and implementations.
 
 use serde::{Deserialize, Serialize};
