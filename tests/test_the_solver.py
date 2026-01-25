@@ -12,7 +12,8 @@ class TestTheSolver(unittest.TestCase):
         problem = "What is 2 + 2?"
         dsl = self.solver.generate_dsl(problem)
         self.assertIn("2 + 2", dsl)
-        self.assertIn("return", dsl)
+        # The DSL should contain result assignment
+        self.assertIn("result =", dsl)
 
     def test_dsl_generation_quadratic(self):
         # Test quadratic equation DSL generation
