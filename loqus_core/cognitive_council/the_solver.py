@@ -129,8 +129,6 @@ class TheSolver:
 
     def execute_in_sandbox(self, code):
         """Execute code in a secure sandbox"""
-    def execute_in_sandbox(self, code):
-        """Execute code in a secure sandbox"""
         try:
             # Compile and execute in sandbox
             compiled = compile_restricted(code, filename="<inline>", mode="exec")
@@ -237,3 +235,7 @@ class TheSolver:
             ],
             "security_level": "High"
         }
+
+
+# Create an instance of TheSolver
+solver = TheSolver()
