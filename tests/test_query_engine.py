@@ -42,7 +42,9 @@ def test_valid_select():
         # the engine doesn't crash on valid SQL
         try:
             result = engine.query_logs("SELECT 1 as test")
-            assert isinstance(result, list)
+            assert isinstance(result, dict)
+            assert result["success"] is True
+            assert isinstance(result["data"], list)
         except QueryEngineError:
             # This is acceptable - we're just testing that it doesn't crash
             pass
