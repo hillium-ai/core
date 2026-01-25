@@ -35,7 +35,8 @@ RUN pip3 install --no-cache-dir --break-system-packages \
     pyaudio faster-whisper torch numpy \
     silero-vad webrtcvad loguru pydantic \
     scipy sounddevice python-dotenv \
-    langchain duckdb sqlparse polars pyarrow textual watchfiles
+    langchain duckdb sqlparse polars pyarrow textual watchfiles \
+    RestrictedPython
 
 # Install Rust tools
 RUN rustup component add clippy rustfmt
