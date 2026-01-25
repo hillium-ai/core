@@ -5,9 +5,11 @@ Orchestrates 4-level memory hierarchy with different update frequencies.
 
 from typing import List, Dict, Any, Optional
 import logging
+import hashlib
+import pickle
 
 from loqus_core.hippo import HippoLink, AssociativeCoreHandle
-from loqus_core.memory.compression import get_compressor, Message
+from loqus_core.memory.compression import get_compressor, Message, CompressedContext
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +151,7 @@ class ContinuumMemorySystem:
 
     # === COMPRESSION HOOKS ===
 
-    def compress_context(self, messages: List[Message]) -> str:
+    def compress_context(self, messages: List[Message]) -> CompressedContext:
         """
         Compress a list of messages using the configured compressor.
         
@@ -157,36 +159,77 @@ class ContinuumMemorySystem:
             messages: List of Message objects to compress
             
         Returns:
-            Compressed string representation
+            CompressedContext object
         """
         try:
+            # Validate input
+            if not isinstance(messages, list):
+                raise TypeError("Messages must be a list")
+            
+            # Quick check to avoid unnecessary compression
+            if len(messages) == 0:
+                # Return empty context
+                return CompressedContext(
+                    data=b'',
+                    metadata={"compression_type": "none", "message_count": 0},
+                    checksum=""
+                )
+            
             compressed = self.compressor.compress(messages)
-            return compressed.summary
+            return compressed
         except Exception as e:
             logger.error(f"Compression failed: {e}")
             # Return original content if compression fails
-            return "\n".join(f"[{m.role}]: {m.content}" for m in messages)
+            # Create a minimal compressed context with original data
+            try:
+                serialized = pickle.dumps(messages)
+                checksum = hashlib.sha256(serialized).hexdigest()
+                return CompressedContext(
+                    data=serialized,
+                    metadata={"compression_type": "none", "error": str(e), "error_type": type(e).__name__, "fallback": True},
+                    checksum=checksum
+                )
+            except Exception as e2:
+                logger.error(f"Failed to create fallback compressed context: {e2}")
+                # Return minimal fallback
+                return CompressedContext(
+                    data=b'',
+                    metadata={"compression_type": "none", "error": str(e2), "fallback": True},
+                    checksum=""
+                )
 
-    def decompress_context(self, compressed_context: str) -> List[Message]:
+    def decompress_context(self, compressed_context: CompressedContext) -> List[Message]:
         """
         Decompress a compressed context back to messages.
         
         Args:
-            compressed_context: String representation of compressed context
+            compressed_context: CompressedContext object
             
         Returns:
             List of Message objects
         """
         try:
-            # For MVP, we'll use the NoOpCompressor which returns a single system message
-            # In a real implementation, we'd reconstruct the original messages
-            return [Message(
-                role="system",
-                content=f"[Decompressed context]\n{compressed_context}",
-                timestamp=0.0,
-            )]
+            # Validate input
+            if not isinstance(compressed_context, CompressedContext):
+                raise TypeError("Invalid compressed context type")
+            
+            # Quick check for empty data
+            if not compressed_context.data:
+                logger.debug("Empty compressed data, returning empty list")
+                return []
+            
+            result = self.compressor.decompress(compressed_context)
+            return result
         except Exception as e:
             logger.error(f"Decompression failed: {e}")
             # Return empty list if decompression fails
+            # Try to provide more context about the error
+            try:
+                # Attempt to deserialize the data directly for debugging
+                if hasattr(compressed_context, 'data') and compressed_context.data:
+                    logger.debug(f"Attempting to deserialize raw data: {len(compressed_context.data)} bytes")
+            except Exception as debug_e:
+                logger.debug(f"Debug deserialization failed: {debug_e}")
+            
             return []
 

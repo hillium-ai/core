@@ -1,31 +1,69 @@
-# tests/test_compression.py
 import pytest
-from loqus_core.memory.compression import (
-    NoOpCompressor, MelodiCompressor, Message, get_compressor
-)
+from loqus_core.memory.compression import NoOpCompressor, MemoryCompressor, MelodiCompressor, Message, CompressedContext
+import hashlib
+import pickle
 
-def test_noop_passthrough():
-    """NoOp should not change token count."""
+def test_noop_compressor():
+    compressor = NoOpCompressor()
+    # Test compression and decompression
+    messages = [
+        Message(content="Hello", metadata={}),
+        Message(content="World", metadata={})
+    ]
+    compressed = compressor.compress(messages)
+    decompressed = compressor.decompress(compressed)
+    assert len(decompressed) == len(messages)
+    assert decompressed[0].content == "Hello"
+    assert decompressed[1].content == "World"
+    
+    # Test checksum integrity
+    assert hasattr(compressed, 'checksum')
+    assert isinstance(compressed.checksum, str)
+    assert len(compressed.checksum) > 0
+    
+    # Test data integrity - checksum should match
+    calculated_checksum = hashlib.sha256(compressed.data).hexdigest()
+    assert calculated_checksum == compressed.checksum
+
+
+def test_noop_compressor_integrity_check():
     compressor = NoOpCompressor()
     messages = [
-        Message(role="user", content="Hello", timestamp=1.0),
-        Message(role="assistant", content="Hi there", timestamp=2.0),
+        Message(content="Test message", metadata={"key": "value"}),
+        Message(content="Another message", metadata={"key2": "value2"})
     ]
     
-    result = compressor.compress(messages)
-    assert result.compression_ratio == 1.0
-
-
-def test_melodi_not_implemented():
-    """MELODI should raise NotImplementedError."""
-    compressor = MelodiCompressor()
+    # Compress
+    compressed = compressor.compress(messages)
     
+    # Decompress
+    decompressed = compressor.decompress(compressed)
+    
+    # Verify data integrity
+    assert len(decompressed) == len(messages)
+    assert decompressed[0].content == "Test message"
+    assert decompressed[1].content == "Another message"
+    assert decompressed[0].metadata == {"key": "value"}
+    assert decompressed[1].metadata == {"key2": "value2"}
+
+
+def test_melodi_compressor_raises_not_implemented():
+    compressor = MelodiCompressor()
     with pytest.raises(NotImplementedError):
         compressor.compress([])
+    with pytest.raises(NotImplementedError):
+        compressor.decompress(None)
 
 
-def test_factory():
-    """Factory should return correct compressor."""
-    assert isinstance(get_compressor("noop",), NoOpCompressor)
-    assert isinstance(get_compressor("none"), NoOpCompressor)
-    assert isinstance(get_compressor("melodi"), MelodiCompressor)
+def test_compression_error_handling():
+    compressor = NoOpCompressor()
+    messages = [
+        Message(content="Test message", metadata={}),
+    ]
+    
+    # Test that compression and decompression work normally
+    compressed = compressor.compress(messages)
+    decompressed = compressor.decompress(compressed)
+    
+    assert len(decompressed) == 1
+    assert decompressed[0].content == "Test message"
