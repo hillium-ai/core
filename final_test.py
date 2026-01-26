@@ -1,0 +1,1 @@
+from loqus_core.cognitive_council.the_solver import TheSolver; solver = TheSolver(); print("=== COMPREHENSIVE TEST ==="); print("1. Capabilities:", solver.get_capabilities()); print("2. Basic math:", solver.solve("What is 5 * 6?")); print("3. Complex math:", solver.solve("Calculate (10 + 5) * 2 - 3")); print("=== TEST COMPLETE ===")

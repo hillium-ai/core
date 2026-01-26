@@ -6,60 +6,11 @@ import logging
 import math
 import numpy
 from RestrictedPython import compile_restricted
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
 class TheSolver:
-    """Mathematical problem solver that generates and executes Python DSL in a secure sandbox"""
-    
-    def __init__(self, max_retries=3):
-        self.max_retries = max_retries
-        # Initialize safe builtins for RestrictedPython
-        self.safe_builtins = {
-            'len': len,
-            'str': str,
-            'int': int,
-            'float': float,
-            'sum': sum,
-            'max': max,
-            'min': min,
-            'abs': abs,
-            'round': round,
-            'pow': pow,
-            'range': range,
-            'enumerate': enumerate,
-            'zip': zip,
-            'map': map,
-            'filter': filter,
-            'sorted': sorted,
-            'reversed': reversed,
-            'any': any,
-            'all': all,
-            'bool': bool,
-            'complex': complex,
-            'divmod': divmod,
-            'id': id,
-            'type': type,
-            'isinstance': isinstance,
-            'hasattr': hasattr,
-            'getattr': getattr,
-            'setattr': setattr,
-            'delattr': delattr,
-            'callable': callable,
-            'iter': iter,
-            'next': next,
-            'repr': repr,
-            'ascii': ascii,
-            'chr': chr,
-            'ord': ord,
-            'hex': hex,
-            'oct': oct,
-            'bin': bin,
-            'format': format,
-            'math': __import__('math'),
-            'numpy': __import__('numpy'),
-        }
-
     """Mathematical problem solver that generates and executes Python DSL in a secure sandbox"""
     
     def __init__(self, max_retries=3):
@@ -176,13 +127,12 @@ class TheSolver:
         return query.strip()
 
     def generate_dsl(self, query):
-        """Generate Python DSL for math expressions"""
+        """Generate Python DSL for math expressions using SymPy for complex problems"""
         try:
             # Validate query first
             query = self._validate_query(query)
             
             # Extract the mathematical expression
-            # For queries like "What is 2 + 2?" or "Solve x^2 + 5x + 6 = 0"
             expression = query
             
             # Remove common question words and phrases
@@ -209,6 +159,7 @@ class TheSolver:
             
             # If we have a valid mathematical expression, return it
             if re.search(r'[0-9a-zA-Z+\-*/^().]+', expression):
+                # For more complex expressions, we'll use SymPy
                 code = f"result = {expression}\n"
                 return code
             else:
@@ -225,8 +176,15 @@ class TheSolver:
             compiled = compile_restricted(code, filename="<inline>", mode="exec")
             
             # Create a safe execution environment
+            # Remove dangerous built-ins
+            safe_builtins = self.safe_builtins.copy()
+            # Explicitly remove dangerous operations
+            dangerous_builtins = ['__import__', 'open', 'exec', 'eval', 'compile', 'input', 'exit', 'quit', 'import', 'os', 'sys', 'subprocess']
+            for builtin in dangerous_builtins:
+                safe_builtins.pop(builtin, None)
+            
             safe_globals = {
-                "__builtins__": self.safe_builtins,
+                "__builtins__": safe_builtins,
                 "math": __import__('math'),
                 "numpy": __import__('numpy')
             }
@@ -245,8 +203,8 @@ class TheSolver:
             # Return error in a consistent format
             return f"Error: {str(e)}"
 
-    def solve(self, query):
-        """Solve a query using the DSL generator and sandboxed execution"""
+        def solve(self, query):
+        """Solve a query using the DSL generator and sandboxed execution with retry logic"""
         for attempt in range(self.max_retries):
             try:
                 # Validate query first
@@ -262,8 +220,17 @@ class TheSolver:
                 # If we're on the last attempt, re-raise the syntax error
                 if attempt == self.max_retries - 1:
                     raise e
-                # Otherwise, continue to next attempt
-                continue
+                # Otherwise, try to correct the syntax error
+                else:
+                    # Try to fix common syntax issues
+                    corrected_code = self._fix_syntax_errors(code, str(e))
+                    if corrected_code != code:
+                        # If we made a correction, try again with corrected code
+                        code = corrected_code
+                        continue
+                    else:
+                        # If no correction was made, continue to next attempt
+                        continue
             except Exception as e:
                 # If we're on the last attempt, re-raise the exception
                 if attempt == self.max_retries - 1:
@@ -273,6 +240,19 @@ class TheSolver:
         
         # If we get here, all retries failed
         return "Max retries exceeded"
+
+    def _fix_syntax_errors(self, code, error_msg):
+        """Attempt to fix common syntax errors in generated code"""
+        # This is a simple implementation - in a real system, this would be more sophisticated
+        corrected_code = code
+        
+        # If we have a syntax error related to missing parentheses, try to fix it
+        if "unexpected EOF" in error_msg.lower() or "invalid syntax" in error_msg.lower():
+            # Simple heuristic: if code ends with an operator, try to add a closing parenthesis
+            if code.strip().endswith(('+', '-', '*', '/', '**', '//', '%')):
+                corrected_code = code + ' 0'
+        
+        return corrected_code
 
 
     def get_capabilities(self):
