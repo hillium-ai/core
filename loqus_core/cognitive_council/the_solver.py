@@ -2,22 +2,113 @@
 """TheSolver - Mathematical Problem Solver for the Cognitive Council"""
 
 import re
-import ast
 import logging
-import math
-import numpy
 import math
 import numpy
 from RestrictedPython import compile_restricted
 
 logger = logging.getLogger(__name__)
 
-
 class TheSolver:
     """Mathematical problem solver that generates and executes Python DSL in a secure sandbox"""
     
     def __init__(self, max_retries=3):
         self.max_retries = max_retries
+        # Initialize safe builtins for RestrictedPython
+        self.safe_builtins = {
+            'len': len,
+            'str': str,
+            'int': int,
+            'float': float,
+            'sum': sum,
+            'max': max,
+            'min': min,
+            'abs': abs,
+            'round': round,
+            'pow': pow,
+            'range': range,
+            'enumerate': enumerate,
+            'zip': zip,
+            'map': map,
+            'filter': filter,
+            'sorted': sorted,
+            'reversed': reversed,
+            'any': any,
+            'all': all,
+            'bool': bool,
+            'complex': complex,
+            'divmod': divmod,
+            'id': id,
+            'type': type,
+            'isinstance': isinstance,
+            'hasattr': hasattr,
+            'getattr': getattr,
+            'setattr': setattr,
+            'delattr': delattr,
+            'callable': callable,
+            'iter': iter,
+            'next': next,
+            'repr': repr,
+            'ascii': ascii,
+            'chr': chr,
+            'ord': ord,
+            'hex': hex,
+            'oct': oct,
+            'bin': bin,
+            'format': format,
+            'math': __import__('math'),
+            'numpy': __import__('numpy'),
+        }
+
+    """Mathematical problem solver that generates and executes Python DSL in a secure sandbox"""
+    
+    def __init__(self, max_retries=3):
+        self.max_retries = max_retries
+        # Initialize safe builtins for RestrictedPython
+        self.safe_builtins = {
+            'len': len,
+            'str': str,
+            'int': int,
+            'float': float,
+            'sum': sum,
+            'max': max,
+            'min': min,
+            'abs': abs,
+            'round': round,
+            'pow': pow,
+            'range': range,
+            'enumerate': enumerate,
+            'zip': zip,
+            'map': map,
+            'filter': filter,
+            'sorted': sorted,
+            'reversed': reversed,
+            'any': any,
+            'all': all,
+            'bool': bool,
+            'complex': complex,
+            'divmod': divmod,
+            'id': id,
+            'type': type,
+            'isinstance': isinstance,
+            'hasattr': hasattr,
+            'getattr': getattr,
+            'setattr': setattr,
+            'delattr': delattr,
+            'callable': callable,
+            'iter': iter,
+            'next': next,
+            'repr': repr,
+            'ascii': ascii,
+            'chr': chr,
+            'ord': ord,
+            'hex': hex,
+            'oct': oct,
+            'bin': bin,
+            'format': format,
+            'math': __import__('math'),
+            'numpy': __import__('numpy'),
+        }
 
     def _validate_query(self, query):
         """Validate and sanitize input query"""
@@ -128,74 +219,30 @@ class TheSolver:
             return "result = 'Error in DSL generation'"
 
     def execute_in_sandbox(self, code):
-        """Execute code in a secure sandbox"""
+        """Execute code in a secure sandbox using RestrictedPython"""
         try:
-            # Compile and execute in sandbox
+            # Compile the code with RestrictedPython
             compiled = compile_restricted(code, filename="<inline>", mode="exec")
             
-            # Safe execution environment - only allow specific builtins
+            # Create a safe execution environment
             safe_globals = {
-                "__builtins__": {
-                    "len": len,
-                    "str": str,
-                    "int": int,
-                    "float": float,
-                    "sum": sum,
-                    "max": max,
-                    "min": min,
-                    "abs": abs,
-                    "round": round,
-                    "pow": pow,
-                    "range": range,
-                    "enumerate": enumerate,
-                    "zip": zip,
-                    "map": map,
-                    "filter": filter,
-                    "sorted": sorted,
-                    "reversed": reversed,
-                    "any": any,
-                    "all": all,
-                    "bool": bool,
-                    "complex": complex,
-                    "divmod": divmod,
-                    "id": id,
-                    "type": type,
-                    "isinstance": isinstance,
-                    "hasattr": hasattr,
-                    "getattr": getattr,
-                    "setattr": setattr,
-                    "delattr": delattr,
-                    "callable": callable,
-                    "iter": iter,
-                    "next": next,
-                    "repr": repr,
-                    "ascii": ascii,
-                    "chr": chr,
-                    "ord": ord,
-                    "hex": hex,
-                    "oct": oct,
-                    "bin": bin,
-                    "format": format,
-                    "divmod": divmod,
-                    "max": max,
-                    "min": min,
-                    "sum": sum,
-                    "abs": abs,
-                    "round": round,
-                    "pow": pow,
-                    "__import__": __import__,
-                },
-                "math": math,
-                "numpy": numpy
+                "__builtins__": self.safe_builtins,
+                "math": __import__('math'),
+                "numpy": __import__('numpy')
             }
             
             loc = {}
-            exec(compiled, safe_globals, loc)  # Use compiled directly
+            exec(compiled, safe_globals, loc)
+            
+            # Return the result
             return loc.get("result", 0)
+        except SyntaxError as e:
+            # Re-raise syntax errors so they can be retried
+            raise e
         except ZeroDivisionError:
             return "Error: Division by zero"
         except Exception as e:
-            # Return error in the same format as expected by tests
+            # Return error in a consistent format
             return f"Error: {str(e)}"
 
     def solve(self, query):
@@ -211,6 +258,12 @@ class TheSolver:
                 # If execution was successful, return result
                 return result
                 
+            except SyntaxError as e:
+                # If we're on the last attempt, re-raise the syntax error
+                if attempt == self.max_retries - 1:
+                    raise e
+                # Otherwise, continue to next attempt
+                continue
             except Exception as e:
                 # If we're on the last attempt, re-raise the exception
                 if attempt == self.max_retries - 1:
