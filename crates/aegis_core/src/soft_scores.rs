@@ -1,3 +1,5 @@
+// Enhanced soft scores implementation with security and threshold features
+
 //! Soft Scores Framework for Gradient Safety Evaluation
 
 use serde::{Deserialize, Serialize};
@@ -15,16 +17,19 @@ pub struct SoftScores {
     pub efficiency: u16,
     /// Ethical score (0-1000)
     pub ethics: u16,
+    /// Threshold for determining if scores meet minimum requirements
+    pub threshold: f32,
 }
 
 impl SoftScores {
     /// Create new SoftScores with all scores clamped to 0-1000 range
-    pub fn new(safety: u16, logic: u16, efficiency: u16, ethics: u16) -> Self {
+    pub fn new(safety: u16, logic: u16, efficiency: u16, ethics: u16, threshold: f32) -> Self {
         Self {
             safety: safety.min(1000),
             logic: logic.min(1000),
             efficiency: efficiency.min(1000),
             ethics: ethics.min(1000),
+            threshold: threshold.min(1.0).max(0.0), // Clamp to 0.0-1.0 range
         }
     }
 
@@ -33,7 +38,9 @@ impl SoftScores {
         self.safety <= 1000 && 
         self.logic <= 1000 && 
         self.efficiency <= 1000 && 
-        self.ethics <= 1000
+        self.ethics <= 1000 &&
+        self.threshold >= 0.0 &&
+        self.threshold <= 1.0
     }
 
     /// Convert to normalized f32 scores (0.0-1.0)
@@ -44,6 +51,13 @@ impl SoftScores {
             efficiency: self.efficiency as f32 / 1000.0,
             ethics: self.ethics as f32 / 1000.0,
         }
+    }
+
+    /// Check if scores meet the minimum threshold
+    pub fn meets_threshold(&self) -> bool {
+        let normalized = self.to_normalized();
+        let average = (normalized.safety + normalized.logic + normalized.efficiency + normalized.ethics) / 4.0;
+        average >= self.threshold
     }
 }
 
@@ -80,7 +94,7 @@ impl ScoreWeights {
         Ok(Self { safety, logic, efficiency, ethics })
     }
 
-    /// Create default weights (equal distribution)
+    /// Get default weights (equal distribution)
     pub fn default_weights() -> Self {
         Self {
             safety: 0.25,
@@ -91,27 +105,30 @@ impl ScoreWeights {
     }
 }
 
-/// Policy for minimum acceptable scores
+/// Safety policy for minimum requirements
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct SafetyPolicy {
-    /// Minimum acceptable safety score
+    /// Minimum safety score
     pub min_safety: u16,
-    /// Minimum acceptable logic score
+    /// Minimum logic score
     pub min_logic: u16,
-    /// Minimum acceptable efficiency score
+    /// Minimum efficiency score
     pub min_efficiency: u16,
-    /// Minimum acceptable ethics score
+    /// Minimum ethics score
     pub min_ethics: u16,
+    /// Minimum threshold for overall score
+    pub min_threshold: f32,
 }
 
 impl SafetyPolicy {
-    /// Create new policy with minimum scores
-    pub fn new(min_safety: u16, min_logic: u16, min_efficiency: u16, min_ethics: u16) -> Self {
+    /// Create new safety policy
+    pub fn new(min_safety: u16, min_logic: u16, min_efficiency: u16, min_ethics: u16, min_threshold: f32) -> Self {
         Self {
             min_safety,
             min_logic,
             min_efficiency,
             min_ethics,
+            min_threshold: min_threshold.min(1.0).max(0.0),
         }
     }
 
@@ -120,8 +137,31 @@ impl SafetyPolicy {
         scores.safety >= self.min_safety &&
         scores.logic >= self.min_logic &&
         scores.efficiency >= self.min_efficiency &&
-        scores.ethics >= self.min_ethics
+        scores.ethics >= self.min_ethics &&
+        scores.threshold >= self.min_threshold
     }
+}
+
+/// Validation result with scores
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum ValidationResult {
+    /// Validation passed
+    Approved,
+    /// Validation failed
+    Rejected,
+    /// Validation requires human review
+    RequiresHumanReview,
+}
+
+/// Validation result with scores
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidationResultWithScores {
+    /// The validation result
+    pub verdict: ValidationResult,
+    /// The soft scores used for validation
+    pub scores: SoftScores,
+    /// The confidence level of the validation
+    pub confidence: f32,
 }
 
 #[cfg(test)]
@@ -130,39 +170,53 @@ mod tests {
 
     #[test]
     fn test_soft_scores_creation() {
-        let scores = SoftScores::new(500, 750, 250, 1000);
+        let scores = SoftScores::new(500, 750, 250, 1000, 0.7);
         assert_eq!(scores.safety, 500);
         assert_eq!(scores.logic, 750);
         assert_eq!(scores.efficiency, 250);
         assert_eq!(scores.ethics, 1000);
+        assert_eq!(scores.threshold, 0.7);
     }
 
     #[test]
     fn test_soft_scores_clamping() {
-        let scores = SoftScores::new(1500, 500, 250, 1000); // 1500 > 1000
+        let scores = SoftScores::new(1500, 500, 250, 1000, 1.5); // 1500 > 1000 and 1.5 > 1.0
         assert_eq!(scores.safety, 1000); // Should be clamped to 1000
         assert_eq!(scores.logic, 500);
         assert_eq!(scores.efficiency, 250);
         assert_eq!(scores.ethics, 1000);
+        assert_eq!(scores.threshold, 1.0); // Should be clamped to 1.0
     }
 
     #[test]
     fn test_soft_scores_validity() {
-        let scores = SoftScores::new(500, 750, 250, 1000);
+        let scores = SoftScores::new(500, 750, 250, 1000, 0.7);
         assert!(scores.is_valid());
         
-        let invalid_scores = SoftScores::new(500, 750, 250, 1500); // 1500 > 1000
+        let invalid_scores = SoftScores::new(500, 750, 250, 1500, 0.7); // 1500 > 1000
+        assert!(!invalid_scores.is_valid());
+        
+        let invalid_scores = SoftScores::new(500, 750, 250, 1000, 1.5); // 1.5 > 1.0
         assert!(!invalid_scores.is_valid());
     }
 
     #[test]
     fn test_normalized_conversion() {
-        let scores = SoftScores::new(500, 750, 250, 1000);
+        let scores = SoftScores::new(500, 750, 250, 1000, 0.7);
         let normalized = scores.to_normalized();
         assert_eq!(normalized.safety, 0.5);
         assert_eq!(normalized.logic, 0.75);
         assert_eq!(normalized.efficiency, 0.25);
         assert_eq!(normalized.ethics, 1.0);
+    }
+
+    #[test]
+    fn test_threshold_check() {
+        let scores = SoftScores::new(500, 750, 250, 1000, 0.5); // Average = (0.5 + 0.75 + 0.25 + 1.0) / 4 = 0.5
+        assert!(scores.meets_threshold());
+        
+        let scores = SoftScores::new(500, 750, 250, 1000, 0.6); // Average = 0.5 < 0.6
+        assert!(!scores.meets_threshold());
     }
 
     #[test]
@@ -187,11 +241,14 @@ mod tests {
 
     #[test]
     fn test_safety_policy() {
-        let policy = SafetyPolicy::new(500, 500, 500, 500);
-        let scores = SoftScores::new(750, 750, 750, 750);
+        let policy = SafetyPolicy::new(500, 500, 500, 500, 0.5);
+        let scores = SoftScores::new(750, 750, 750, 750, 0.6);
         assert!(policy.meets_policy(&scores));
         
-        let scores = SoftScores::new(250, 750, 750, 750); // Safety below threshold
+        let scores = SoftScores::new(250, 750, 750, 750, 0.6); // Safety below threshold
+        assert!(!policy.meets_policy(&scores));
+        
+        let scores = SoftScores::new(750, 750, 750, 750, 0.8); // Threshold below requirement
         assert!(!policy.meets_policy(&scores));
     }
 }
