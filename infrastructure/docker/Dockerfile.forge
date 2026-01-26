@@ -1,103 +1,73 @@
-# Hillium Forge - Unified Build & Test Environment
-# Version: 1.2.0 (Ubuntu Rebase - Hillium-Core Local)
+# Hillium Forge - High-Performance Build Environment
+# Version: 1.4.0 (Optimized Cache & Python 3.11 Fix)
 FROM ubuntu:22.04
 
 LABEL maintainer="Hillium Engineering Team"
-LABEL version="1.2.0"
+LABEL version="1.4.0"
 
-# Avoid interactive prompts during apt installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 1. System Dependencies (Matches setup_dev.sh)
+# --- LAYER 1: SYSTEM STABILITY ---
+# We keep this at the top because it rarely changes.
 RUN apt-get update && apt-get install -y \
-    python3.11 \
-    python3-pip \
-    python3.11-venv \
-    python-is-python3 \
-    build-essential \
-    cmake \
-    libssl-dev \
-    protobuf-compiler \
-    pkg-config \
-    libasound2-dev \
-    portaudio19-dev \
-    espeak-ng \
-    redis-tools \
-    git \
-    curl \
-    vim \
-    htop \
-    wget \
-    bash \
-    coreutils \
-    findutils \
-    grep \
-    sed \
-    gawk \
-    procps \
-    ffmpeg \
-    libopenblas-dev \
-    python3-dev \
+    python3.11 python3.11-dev python3-pip python3.11-venv python-is-python3 \
+    build-essential cmake libssl-dev protobuf-compiler pkg-config \
+    libasound2-dev portaudio19-dev espeak-ng \
+    git curl wget ffmpeg libopenblas-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Rust Toolchain (Global install for Ubuntu)
-ENV RUSTUP_HOME=/usr/local/rustup \
-    CARGO_HOME=/usr/local/cargo \
-    PATH=/usr/local/cargo/bin:$PATH
+# --- LAYER 2: PYTHON DEFAULT CONFIG ---
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 2 && \
+    update-alternatives --set python3 /usr/bin/python3.11 && \
+    ln -sf /usr/bin/python3 /usr/bin/python
 
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.82.0 --no-modify-path && \
-    chmod -R 777 /usr/local/rustup /usr/local/cargo
+# --- LAYER 3: HEAVY COMPILATION (COMPILE ONCE) ---
+# We do this FIRST so light changes below don't trigger recompilation.
+RUN python3.11 -m pip install --no-cache-dir --upgrade pip setuptools wheel
+RUN CMAKE_ARGS="-DLLAMA_BLAS=ON -DLLAMA_OPENBLAS=ON" FORCE_CMAKE=1 python3.11 -m pip install --no-cache-dir --break-system-packages \
+    llama-cpp-python \
+    webrtcvad \
+    pyaudio
 
-RUN rustup component add clippy rustfmt
-
-# 3. Build Tools & Upgrade (Critical for ARM64 source builds)
-RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel
-
-# 4. llama-cpp-python (Separate build step with BLAS flags)
-RUN CMAKE_ARGS="-DLLAMA_BLAS=ON -DLLAMA_OPENBLAS=ON" FORCE_CMAKE=1 pip3 install --no-cache-dir --break-system-packages llama-cpp-python
-
-# 5. Full Python Stack (Matches DEPENDENCIES.md + setup_dev.sh)
-RUN pip3 install --no-cache-dir --break-system-packages \
+# --- LAYER 4: APP DEPENDENCIES (SEMI-STABLE) ---
+RUN python3.11 -m pip install --no-cache-dir --break-system-packages \
     pytest>=7.0 pytest-asyncio mypy black ruff \
-    pyaudio faster-whisper torch numpy \
-    silero-vad webrtcvad loguru pydantic \
+    faster-whisper torch numpy \
+    silero-vad loguru pydantic \
     scipy sounddevice python-dotenv \
     langchain duckdb sqlparse polars pyarrow textual watchfiles \
     RestrictedPython pandas pyyaml
 
-# 6. Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:$PATH"
+# --- LAYER 5: RUST TOOLCHAIN ---
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.82.0 --no-modify-path && \
+    chmod -R 777 /usr/local/rustup /usr/local/cargo && \
+    rustup component add clippy rustfmt
 
-# 7. Create Non-Root User
-ARG USER_ID=1000
-ARG GROUP_ID=1000
-RUN groupadd -g ${GROUP_ID} forge 2>/dev/null || true
-RUN useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash forgeuser 2>/dev/null || true
+# --- LAYER 6: DYNAMIC CONFIG (CHANGES OFTEN) ---
+# We put User and Path config at the bottom to avoid invalidating compilation cache.
+ARG USER_ID=501
+ARG GROUP_ID=20
+RUN groupadd -g ${GROUP_ID} forge 2>/dev/null || true && \
+    useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash forgeuser 2>/dev/null || true
 
-# 8. Configure Environment for forgeuser
-# Use the global cargo home, but ensure user can write to it
-ENV CARGO_TARGET_DIR=/workspace/target
-ENV RUST_BACKTRACE=1
+ENV CARGO_TARGET_DIR=/workspace/target \
+    RUST_BACKTRACE=1 \
+    PYTHONPATH="/workspace" \
+    PATH="/home/forgeuser/.local/bin:${PATH}"
 
-# Ensure local bin is in PATH for forgeuser (pip --user installs)
-ENV PATH="/home/forgeuser/.local/bin:${PATH}"
-
-# Set Working Directory & PYTHONPATH
 WORKDIR /workspace
-ENV PYTHONPATH="/workspace"
 
-# 9. Transfer Ownership
-# Ensure forgeuser can write to global cargo directories
-RUN mkdir -p /home/forgeuser/.cargo && chown -R ${USER_ID}:${GROUP_ID} /home/forgeuser/.cargo
+# Fix permissions for the mounted workspace
+RUN mkdir -p /workspace/target /home/forgeuser/.cargo && \
+    chown -R ${USER_ID}:${GROUP_ID} /workspace /home/forgeuser/.cargo
 
-# Ensure workspace is writable (for CARGO_TARGET_DIR)
-RUN mkdir -p /workspace/target && chown -R ${USER_ID}:${GROUP_ID} /workspace
-
-# 10. Switch to User & Warmup
 USER forgeuser
 
-# Warmup Cargo (using global binary)
+# Warmup (Optional optimization)
 RUN cargo init --name warmup /tmp/warmup && \
     cd /tmp/warmup && \
     echo 'tokio = { version = "1.35", features = ["full"] }' >> Cargo.toml && \
@@ -105,7 +75,6 @@ RUN cargo init --name warmup /tmp/warmup && \
     cargo build --release && \
     rm -rf /tmp/warmup
 
-# 11. Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
     CMD cargo --version && python3 --version || exit 1
 
