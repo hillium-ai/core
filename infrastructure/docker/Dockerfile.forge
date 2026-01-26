@@ -1,84 +1,112 @@
 # Hillium Forge - Unified Build & Test Environment
-# Purpose: Provide a consistent, isolated environment for Rust/Python compilation
-# Used by: Levitate agents for dynamic verification
+# Version: 1.2.0 (Ubuntu Rebase - Hillium-Core Local)
+FROM ubuntu:22.04
 
-FROM rust:1.75-bookworm
+LABEL maintainer="Hillium Engineering Team"
+LABEL version="1.2.0"
 
-# Install Python 3.11 and system dependencies
+# Avoid interactive prompts during apt installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 1. System Dependencies (Matches setup_dev.sh)
 RUN apt-get update && apt-get install -y \
     python3.11 \
     python3-pip \
     python3.11-venv \
+    python-is-python3 \
     build-essential \
     cmake \
     libssl-dev \
     protobuf-compiler \
-    ninja-build \
     pkg-config \
-    libasound2-dev portaudio19-dev \
+    libasound2-dev \
+    portaudio19-dev \
     espeak-ng \
-    redis-tools git curl vim htop wget \
-    bash coreutils findutils grep sed gawk procps ffmpeg libopenblas-dev python3-dev \
-    python-is-python3 \
+    redis-tools \
+    git \
+    curl \
+    vim \
+    htop \
+    wget \
+    bash \
+    coreutils \
+    findutils \
+    grep \
+    sed \
+    gawk \
+    procps \
+    ffmpeg \
+    libopenblas-dev \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Create pip symlink for legacy command support (Force overwrite if exists)
-RUN ln -sf /usr/bin/pip3 /usr/bin/pip
+# 2. Rust Toolchain (Global install for Ubuntu)
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
 
-# Install piper-tts binary (v10.7.90: WP-019 Aura Voice support)
-RUN cd /tmp && \
-    wget -q https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_arm64.tar.gz && \
-    tar -xzf piper_arm64.tar.gz && \
-    cp -r piper/* /usr/local/bin/ && \
-    rm -rf piper piper_arm64.tar.gz && \
-    piper --help > /dev/null 2>&1 || echo "piper installed"
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.82.0 --no-modify-path && \
+    chmod -R 777 /usr/local/rustup /usr/local/cargo
 
-# Install Python dependencies (v10.7.70: Audio/AI stack)
+RUN rustup component add clippy rustfmt
+
+# 3. Build Tools & Upgrade (Critical for ARM64 source builds)
+RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel
+
+# 4. llama-cpp-python (Separate build step with BLAS flags)
+RUN CMAKE_ARGS="-DLLAMA_BLAS=ON -DLLAMA_OPENBLAS=ON" FORCE_CMAKE=1 pip3 install --no-cache-dir --break-system-packages llama-cpp-python
+
+# 5. Full Python Stack (Matches DEPENDENCIES.md + setup_dev.sh)
 RUN pip3 install --no-cache-dir --break-system-packages \
     pytest>=7.0 pytest-asyncio mypy black ruff \
     pyaudio faster-whisper torch numpy \
     silero-vad webrtcvad loguru pydantic \
     scipy sounddevice python-dotenv \
     langchain duckdb sqlparse polars pyarrow textual watchfiles \
-    RestrictedPython llama-cpp-python pandas pyyaml
+    RestrictedPython pandas pyyaml
 
-# Install Rust tools
-RUN rustup component add clippy rustfmt
-
-# Install uv (fast Python package manager)
+# 6. Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.cargo/bin:$PATH"
 
-# Set working directory
-WORKDIR /workspace
-ENV PYTHONPATH="/workspace:${PYTHONPATH}"
-
-
-# Create a non-root user matching host UID (for file permission parity)
-# Default to UID 1000, override via docker-compose if needed
+# 7. Create Non-Root User
 ARG USER_ID=1000
 ARG GROUP_ID=1000
-RUN groupadd -g ${GROUP_ID} forge || true
-RUN useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash forgeuser || true
+RUN groupadd -g ${GROUP_ID} forge 2>/dev/null || true
+RUN useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash forgeuser 2>/dev/null || true
 
-# Switch to non-root user for builds
+# 8. Configure Environment for forgeuser
+# Use the global cargo home, but ensure user can write to it
+ENV CARGO_TARGET_DIR=/workspace/target
+ENV RUST_BACKTRACE=1
+
+# Ensure local bin is in PATH for forgeuser (pip --user installs)
+ENV PATH="/home/forgeuser/.local/bin:${PATH}"
+
+# Set Working Directory & PYTHONPATH
+WORKDIR /workspace
+ENV PYTHONPATH="/workspace"
+
+# 9. Transfer Ownership
+# Ensure forgeuser can write to global cargo directories
+RUN mkdir -p /home/forgeuser/.cargo && chown -R ${USER_ID}:${GROUP_ID} /home/forgeuser/.cargo
+
+# Ensure workspace is writable (for CARGO_TARGET_DIR)
+RUN mkdir -p /workspace/target && chown -R ${USER_ID}:${GROUP_ID} /workspace
+
+# 10. Switch to User & Warmup
 USER forgeuser
 
-# Pre-warm Cargo cache (optional optimization)
-# This creates a dummy project to cache common dependencies
-RUN cargo init --name dummy /tmp/warmup && \
+# Warmup Cargo (using global binary)
+RUN cargo init --name warmup /tmp/warmup && \
     cd /tmp/warmup && \
     echo 'tokio = { version = "1.35", features = ["full"] }' >> Cargo.toml && \
     echo 'sled = "0.34"' >> Cargo.toml && \
     cargo build --release && \
     rm -rf /tmp/warmup
 
-# Set Cargo target directory to a cached volume (speeds up rebuilds)
-ENV CARGO_TARGET_DIR=/workspace/target
-
-# Health check: Verify Rust and Python are available
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# 11. Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
     CMD cargo --version && python3 --version || exit 1
 
-# Default command: Keep container alive for exec commands
 CMD ["tail", "-f", "/dev/null"]
