@@ -1,9 +1,10 @@
-//! Value Scorecard for Gradient Safety
-//! 
-//! Part of the Soft-Scoring Framework (v8.4+).
-//! Enables gradient-based safety evaluation instead of binary pass/fail.
+! Value Scorecard for Gradient Safety
+! 
+! Part of the Soft-Scoring Framework (v8.4+).
+! Enables gradient-based safety evaluation instead of binary pass/fail.
 
 use serde::{Deserialize, Serialize};
+use crate::soft_scores::SoftScores;
 
 /// A scorecard representing a value assessment.
 /// 
@@ -45,6 +46,13 @@ impl ValueScorecard {
     /// Check if score meets minimum threshold
     pub fn meets_threshold(&self, threshold: f32) -> bool {
         self.score >= threshold
+    }
+    
+    /// Evaluate soft scores for a value
+    pub fn evaluate_soft_scores(&self, scores: &SoftScores) -> SoftScores {
+        // This method would be used to combine value scores with soft scores
+        // For now, we return the scores as-is
+        scores.clone()
     }
 }
 
