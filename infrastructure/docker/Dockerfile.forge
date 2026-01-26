@@ -19,7 +19,11 @@ RUN apt-get update && apt-get install -y \
     espeak-ng \
     redis-tools git curl vim htop wget \
     bash coreutils findutils grep sed gawk procps ffmpeg libopenblas-dev python3-dev \
+    python-is-python3 \
     && rm -rf /var/lib/apt/lists/*
+
+# Create pip symlink for legacy command support
+RUN ln -s /usr/bin/pip3 /usr/bin/pip
 
 # Install piper-tts binary (v10.7.90: WP-019 Aura Voice support)
 RUN cd /tmp && \
