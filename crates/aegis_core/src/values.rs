@@ -1,7 +1,7 @@
-! Value Scorecard for Gradient Safety
-! 
-! Part of the Soft-Scoring Framework (v8.4+).
-! Enables gradient-based safety evaluation instead of binary pass/fail.
+//! Value Scorecard for Gradient Safety
+//!
+//! Part of the Soft-Scoring Framework (v8.4+).
+//! Enables gradient-based safety evaluation instead of binary pass/fail.
 
 use serde::{Deserialize, Serialize};
 use crate::soft_scores::SoftScores;
