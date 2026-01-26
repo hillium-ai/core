@@ -4,7 +4,7 @@
 //! Enables gradient-based safety evaluation instead of binary pass/fail.
 
 use serde::{Deserialize, Serialize};
-use crate::soft_scores::SoftScores;
+use crate::soft_scores::{SoftScores, ThresholdPolicy};
 
 /// A scorecard representing a value assessment.
 /// 
@@ -53,6 +53,13 @@ impl ValueScorecard {
         // This method would be used to combine value scores with soft scores
         // For now, we return the scores as-is
         scores.clone()
+    }
+    
+    /// Combine value score with soft scores using a threshold policy
+    pub fn combine_with_soft_scores(&self, soft_scores: &SoftScores, _policy: &ThresholdPolicy) -> SoftScores {
+        // This method combines the value score with soft scores
+        // For now, we return the soft scores as-is
+        soft_scores.clone()
     }
 }
 

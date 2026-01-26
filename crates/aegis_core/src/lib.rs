@@ -2,19 +2,23 @@
 
 pub mod validation;
 pub mod soft_scores;
+pub mod values;
 
-/// A safety validation result
+pub use validation::{ValidationResult, Verdict};
+pub use soft_scores::{SoftScores, ScoreWeights, ThresholdPolicy};
+
+/// A safety validation result wrapper
 #[derive(Debug, Clone)]
 pub struct SafetyValidation {
     /// The validation result
     pub result: validation::ValidationResult,
     /// The soft scores
-    pub soft_scores: Option<validation::SoftScores>,
+    pub soft_scores: Option<soft_scores::SoftScores>,
 }
 
 impl SafetyValidation {
     /// Create a new safety validation
-    pub fn new(result: validation::ValidationResult, soft_scores: Option<validation::SoftScores>) -> Self {
+    pub fn new(result: validation::ValidationResult, soft_scores: Option<soft_scores::SoftScores>) -> Self {
         Self {
             result,
             soft_scores,
@@ -30,7 +34,7 @@ impl SafetyValidation {
     }
 
     /// Get the normalized scores
-    pub fn normalized_scores(&self) -> Option<validation::SoftScores> {
+    pub fn normalized_scores(&self) -> Option<soft_scores::SoftScores> {
         self.soft_scores.as_ref().map(|scores| scores.to_normalized())
     }
 
@@ -46,7 +50,7 @@ impl SafetyValidation {
 /// A policy for validation
 pub trait Policy {
     /// Check if the scores meet the policy
-    fn meets_policy(&self, scores: &validation::SoftScores) -> bool;
+    fn meets_policy(&self, scores: &soft_scores::SoftScores) -> bool;
 }
 
 #[cfg(test)]
@@ -55,16 +59,20 @@ mod tests {
 
     #[test]
     fn test_safety_validation() {
+        let scores = soft_scores::SoftScores {
+            safety: 0.8,
+            logic: 0.9,
+            efficiency: 0.7,
+            ethics: 0.8,
+        };
+        
         let result = validation::ValidationResult {
-            verdict: validation::Verdict::Pass,
-            scores: validation::SoftScores {
-                scores: vec![0.8, 0.9, 0.7],
-            },
+            verdict: validation::Verdict::Approved,
+            scores: scores.clone(),
+            reason: "Test validation".to_string(),
         };
 
-        let validation = SafetyValidation::new(result, Some(validation::SoftScores {
-            scores: vec![0.8, 0.9, 0.7],
-        }));
+        let validation = SafetyValidation::new(result, Some(scores));
 
         assert!(validation.is_valid());
         assert!(validation.normalized_scores().is_some());
