@@ -9,12 +9,12 @@ try:
     print("✅ Import successful")
     
     # Test basic functionality
-    test_query = "calculate 2 plus 3"
+    test_query = "calculate 2 + 3"
     result = solver.solve(test_query)
     print(f"✅ Basic test result: {result}")
     
     # Test with more complex query
-    test_query2 = "solve 5 times 4"
+    test_query2 = "solve 5 * 4"
     result2 = solver.solve(test_query2)
     print(f"✅ Complex test result: {result2}")
     
