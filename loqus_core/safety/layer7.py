@@ -15,6 +15,25 @@ class ValidationResult(Enum):
     REQUIRES_HUMAN = "requires_human"
 
 @dataclass
+class SoftScores:
+    safety: float
+    logic: float
+    efficiency: float
+    ethics: float
+
+    def __post_init__(self):
+        # Validate that all scores are between 0.0 and 1.0
+        for field, value in self.__dict__.items():
+            if not 0.0 <= value <= 1.0:
+                raise ValueError(f"Score {field} must be between 0.0 and 1.0, got {value}")
+
+@dataclass
+class ValidationResultWithScores:
+    verdict: ValidationResult
+    scores: SoftScores
+    reason: str = ""
+
+@dataclass
 class VisionObject:
     object_id: str
     bbox: Dict[str, float]
@@ -30,7 +49,7 @@ class CognitiveSafetyValidator:
         self.version = "1.0.0"
         self.confidence_threshold = confidence_threshold
     
-    def validate(self, context: Dict[str, Any]) -> ValidationResult:
+    def validate(self, context: Dict[str, Any]) -> ValidationResultWithScores:
         """
         Run the 4-stage validation pipeline.
         
