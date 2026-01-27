@@ -1,3 +1,4 @@
+//!
 //! Soft Scores Framework for Gradient Safety Evaluation
 
 use serde::{Deserialize, Serialize};
@@ -179,6 +180,52 @@ pub enum Verdict {
     RequiresHuman,
 }
 
+/// Compute a weighted score from soft scores
+
+/// This function takes a set of soft scores and weights them according to the provided weights.
+
+/// # Arguments
+/// * `scores` - The soft scores to be weighted
+/// * `weights` - The weights to apply to each score dimension
+
+/// # Returns
+/// The weighted average score
+pub fn compute_weighted_score(scores: &SoftScores, weights: &ScoreWeights) -> f32 {
+    scores.aggregate(weights)
+}
+
+/// Determine verdict based on scores and thresholds
+///
+/// This function determines the final verdict based on individual score thresholds
+/// and an overall score threshold.
+///
+/// # Arguments
+/// * `scores` - The soft scores to evaluate
+/// * `policy` - The threshold policy to apply
+
+/// # Returns
+/// The final verdict (Approved, Rejected, or RequiresHuman)
+pub fn determine_verdict_from_scores(scores: &SoftScores, policy: &ThresholdPolicy) -> Verdict {
+    // Check if any individual score is below threshold
+    if scores.safety < policy.safety_threshold ||
+       scores.logic < policy.logic_threshold ||
+       scores.efficiency < policy.efficiency_threshold ||
+       scores.ethics < policy.ethics_threshold {
+        return Verdict::Rejected;
+    }
+
+    // Calculate overall score
+    let weights = ScoreWeights::default_weights();
+    let overall_score = scores.aggregate(&weights);
+
+    // If overall score is below threshold, require human review
+    if overall_score < policy.overall_threshold {
+        Verdict::RequiresHuman
+    } else {
+        Verdict::Approved
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -206,7 +253,7 @@ mod tests {
         let scores = SoftScores::new(0.8, 0.9, 0.7, 0.8);
         let weights = ScoreWeights::new(0.25, 0.25, 0.25, 0.25).unwrap();
         let aggregated = scores.aggregate(&weights);
-        assert_eq!(aggregated, 0.8); // (0.8 + 0.9 + 0.7 + 0.8) / 4 = 0.8
+        assert_eq!(aggregated, 0.8);
     }
 
     #[test]
@@ -224,5 +271,24 @@ mod tests {
         let policy = ThresholdPolicy::new(0.7, 0.7, 0.7, 0.7, 0.9);
         let verdict = policy.determine_verdict(&scores);
         assert_eq!(verdict, Verdict::RequiresHuman);
+    }
+
+    #[test]
+    fn test_compute_weighted_score() {
+        let scores = SoftScores::new(0.8, 0.9, 0.7, 0.8);
+        let weights = ScoreWeights::new(0.25, 0.25, 0.25, 0.25).unwrap();
+        let score = compute_weighted_score(&scores, &weights);
+        assert_eq!(score, 0.8);
+    }
+
+    #[test]
+    fn test_weight_validation() {
+        // This should succeed
+        let weights = ScoreWeights::new(0.25, 0.25, 0.25, 0.25);
+        assert!(weights.is_ok());
+        
+        // This should fail
+        let weights = ScoreWeights::new(0.3, 0.3, 0.3, 0.3);
+        assert!(weights.is_err());
     }
 }

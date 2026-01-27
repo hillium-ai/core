@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::soft_scores::SoftScores;
+use crate::soft_scores::{SoftScores, Verdict};
 
 /// Result of a safety validation check
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10,17 +10,6 @@ pub struct ValidationResult {
     pub scores: SoftScores,
     /// Reason for the validation result
     pub reason: String,
-}
-
-/// Verdict of a safety validation
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum Verdict {
-    /// Validation passed
-    Approved,
-    /// Validation failed
-    Rejected,
-    /// Validation requires human review
-    RequiresHuman,
 }
 
 impl Default for ValidationResult {

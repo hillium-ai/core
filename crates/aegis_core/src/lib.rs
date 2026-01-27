@@ -4,8 +4,8 @@ pub mod validation;
 pub mod soft_scores;
 pub mod values;
 
-pub use validation::{ValidationResult, Verdict};
-pub use soft_scores::{SoftScores, ScoreWeights, ThresholdPolicy};
+pub use validation::{ValidationResult};
+pub use soft_scores::{SoftScores, ScoreWeights, ThresholdPolicy, Verdict};
 
 /// A safety validation result wrapper
 #[derive(Debug, Clone)]
@@ -76,5 +76,17 @@ mod tests {
 
         assert!(validation.is_valid());
         assert!(validation.normalized_scores().is_some());
+    }
+
+    #[test]
+    fn test_scoring_integration() {
+        let scores = soft_scores::SoftScores::new(0.8, 0.9, 0.7, 0.8);
+        let weights = soft_scores::ScoreWeights::new(0.25, 0.25, 0.25, 0.25).unwrap();
+        let weighted_score = scores.aggregate(&weights);
+        assert_eq!(weighted_score, 0.8);
+        
+        let policy = soft_scores::ThresholdPolicy::new(0.7, 0.7, 0.7, 0.7, 0.8);
+        let verdict = policy.determine_verdict(&scores);
+        assert_eq!(verdict, soft_scores::Verdict::Approved);
     }
 }
