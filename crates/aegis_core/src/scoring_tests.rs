@@ -3,7 +3,8 @@
 
 #[cfg(test)]
 mod tests {
-    use super::scoring::*;
+    use crate::soft_scores::*;
+use crate::validation::*;
     
     #[test]
     fn test_scoring_module_integration() {

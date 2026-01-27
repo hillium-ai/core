@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod comprehensive_tests {
-    use super::*;
+    use crate::soft_scores::*;
 
     #[test]
     fn test_comprehensive_score_validation() {
