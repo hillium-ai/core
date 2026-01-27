@@ -67,7 +67,7 @@ mod tests {
         };
         
         let result = validation::ValidationResult {
-            verdict: validation::Verdict::Approved,
+            verdict: Verdict::Approved,
             scores: scores.clone(),
             reason: "Test validation".to_string(),
         };
@@ -87,6 +87,6 @@ mod tests {
         
         let policy = soft_scores::ThresholdPolicy::new(0.7, 0.7, 0.7, 0.7, 0.8);
         let verdict = policy.determine_verdict(&scores);
-        assert_eq!(verdict, soft_scores::Verdict::Approved);
+        assert_eq!(verdict, Verdict::Approved);
     }
 }
