@@ -1,9 +1,12 @@
 import math
 import json
 import logging
+import os
+import time
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from collections import defaultdict
+from threading import Lock
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +27,7 @@ class ModelArm:
     total_reward: float = 0.0
     total_latency: float = 0.0
     latency_samples: int = 0
+    last_used: Optional[float] = None
     
     def mean_reward(self) -> float:
         return self.total_reward / self.count if self.count > 0 else 0.0
@@ -61,13 +65,14 @@ class BanditRouter:
         self.models: Dict[str, ModelArm] = {}
         self.total_pulls = 0
         self.config = config or {}
+        self.lock = Lock()  # For thread safety
         self.load_manifest()
         
         # Manual overrides
         self.manual_overrides = self.config.get("manual_overrides", {})
         
         logger.info(f"Initialized BanditRouter with {len(self.models)} models")
-    
+
     def load_manifest(self):
         """
         Loads model profiles from JSON manifest and converts them to ModelArm objects.
@@ -140,33 +145,34 @@ class BanditRouter:
         Returns:
             Name of the selected model
         """
-        # Check for manual override
-        if self.manual_overrides:
-            # Check if there's a specific override for this query complexity
-            for complexity_range, model_name in self.manual_overrides.items():
-                if complexity_range == "default" or self._is_in_range(query_complexity, complexity_range):
-                    logger.debug(f"Using manual override: {model_name} for complexity {query_complexity}")
-                    return model_name
-        
-        # If no valid models available
-        available_models = [arm for arm in self.models.values() if arm.available]
-        if not available_models:
-            logger.warning("No available models found, using fallback")
-            return self._select_fallback_model()
-        
-        # Calculate UCB1 scores for all available models
-        scores = {}
-        for arm in available_models:
-            scores[arm.name] = arm.ucb1_score(self.total_pulls)
+        with self.lock:  # Thread safety
+            # Check for manual override
+            if self.manual_overrides:
+                # Check if there's a specific override for this query complexity
+                for complexity_range, model_name in self.manual_overrides.items():
+                    if complexity_range == "default" or self._is_in_range(query_complexity, complexity_range):
+                        logger.debug(f"Using manual override: {model_name} for complexity {query_complexity}")
+                        return model_name
             
-        # Select model with highest UCB1 score
-        selected_model = max(scores, key=scores.get)
-        
-        # Increment total pulls
-        self.total_pulls += 1
-        
-        logger.debug(f"Selected model {selected_model} with UCB1 score {scores[selected_model]:.4f}")
-        return selected_model
+            # If no valid models available
+            available_models = [arm for arm in self.models.values() if arm.available]
+            if not available_models:
+                logger.warning("No available models found, using fallback")
+                return self._select_fallback_model()
+            
+            # Calculate UCB1 scores for all available models
+            scores = {}
+            for arm in available_models:
+                scores[arm.name] = arm.ucb1_score(self.total_pulls)
+                
+            # Select model with highest UCB1 score
+            selected_model = max(scores, key=scores.get)
+            
+            # Increment total pulls
+            self.total_pulls += 1
+            
+            logger.debug(f"Selected model {selected_model} with UCB1 score {scores[selected_model]:.4f}")
+            return selected_model
     
     def _is_in_range(self, value: float, range_str: str) -> bool:
         """
@@ -203,22 +209,25 @@ class BanditRouter:
             latency: Latency of the model response
             success: Whether the model execution was successful
         """
-        if model_name not in self.models:
-            logger.warning(f"Model {model_name} not found in router")
-            return
-        
-        arm = self.models[model_name]
-        
-        # Update bandit statistics
-        arm.count += 1
-        arm.total_reward += reward
-        
-        # Update latency statistics
-        if latency > 0:
-            arm.total_latency += latency
-            arm.latency_samples += 1
-        
-        logger.debug(f"Updated performance for {model_name}: reward={reward:.4f}, latency={latency:.4f}")
+        with self.lock:  # Thread safety
+            if model_name not in self.models:
+                logger.warning(f"Model {model_name} not found in router")
+                return
+            
+            arm = self.models[model_name]
+            
+            # Update bandit statistics
+            arm.count += 1
+            arm.total_reward += reward
+            
+            # Update latency statistics
+            if latency > 0:
+                arm.total_latency += latency
+                arm.latency_samples += 1
+                
+            arm.last_used = time.time()  # Track when it was last used
+            
+            logger.debug(f"Updated performance for {model_name}: reward={reward:.4f}, latency={latency:.4f}")
     
     def get_model_stats(self, model_name: str) -> Dict[str, Any]:
         """
