@@ -24,12 +24,47 @@ class ActionPlan:
     def __init__(self, content: str = ""):
         self.content = content
 
+
 def mock_inspector_1(action_plan: ActionPlan) -> str:
     """Mock inspector 1 - simulates an inspector that evaluates action plans"""
+    # Simulate some processing time
+    import time
+    time.sleep(0.01)
+    
     # Return a mock result based on content
     if "unsafe" in action_plan.content.lower():
         return "rejected"
-    elif "safe" in action_plan.content.lower() or "permitted" in action_plan.content.lower():
+    elif "safe" in action_plan.content.lower():
+        return "approved"
+    else:
+        return "requires_human"
+
+
+def mock_inspector_2(action_plan: ActionPlan) -> str:
+    """Mock inspector 2 - simulates another inspector"""
+    # Simulate some processing time
+    import time
+    time.sleep(0.01)
+    
+    # Return a mock result based on content
+    if "dangerous" in action_plan.content.lower():
+        return "rejected"
+    elif "harmless" in action_plan.content.lower():
+        return "approved"
+    else:
+        return "requires_human"
+
+
+def mock_inspector_3(action_plan: ActionPlan) -> str:
+    """Mock inspector 3 - simulates a third inspector"""
+    # Simulate some processing time
+    import time
+    time.sleep(0.01)
+    
+    # Return a mock result based on content
+    if "forbidden" in action_plan.content.lower():
+        return "rejected"
+    elif "permitted" in action_plan.content.lower():
         return "approved"
     else:
         return "requires_human"
@@ -43,7 +78,6 @@ async def run_inspector(inspector_func, action_plan: ActionPlan) -> str:
     except Exception as e:
         logger.error(f"Inspector failed with error: {e}")
         return "requires_human"
-
 
 async def multi_inspector(action_plan: ActionPlan) -> ConsensusResult:
     """Run multiple inspectors in parallel and determine consensus result"""
@@ -94,44 +128,3 @@ if __name__ == "__main__":
     # Run the multi-inspector
     result = asyncio.run(multi_inspector(test_plan))
     print(f"Consensus result: {result.value}")
-
-def mock_inspector_2(action_plan: ActionPlan) -> str:
-    """Mock inspector 2 - simulates another inspector"""
-    # Return a mock result based on content
-    if "dangerous" in action_plan.content.lower():
-        return "rejected"
-    elif "harmless" in action_plan.content.lower() or "permitted" in action_plan.content.lower():
-        return "approved"
-    else:
-        return "requires_human"
-
-def mock_inspector_3(action_plan: ActionPlan) -> str:
-    """Mock inspector 3 - simulates a third inspector"""
-    # Return a mock result based on content
-    if "forbidden" in action_plan.content.lower():
-        return "rejected"
-    elif "permitted" in action_plan.content.lower() or "safe" in action_plan.content.lower():
-        return "approved"
-    else:
-        return "requires_human"
-
-def mock_inspector_2(action_plan: ActionPlan) -> str:
-    """Mock inspector 2 - simulates another inspector"""
-    # Return a mock result based on content
-    if "dangerous" in action_plan.content.lower():
-        return "rejected"
-    elif "harmless" in action_plan.content.lower() or "permitted" in action_plan.content.lower():
-        return "approved"
-    else:
-        return "requires_human"
-
-
-def mock_inspector_3(action_plan: ActionPlan) -> str:
-    """Mock inspector 3 - simulates a third inspector"""
-    # Return a mock result based on content
-    if "forbidden" in action_plan.content.lower():
-        return "rejected"
-    elif "permitted" in action_plan.content.lower() or "safe" in action_plan.content.lower():
-        return "approved"
-    else:
-        return "requires_human"
