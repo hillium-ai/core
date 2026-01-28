@@ -53,10 +53,22 @@ def test_inspector_exception_handling():
     # Should not raise an exception
     assert result in [ConsensusResult.APPROVED, ConsensusResult.REQUIRES_HUMAN]
 
+
+def test_timeout_handling():
+    """Test that timeout is handled properly"""
+    action_plan = ActionPlan("This is a safe action")
+    
+    # Run the multi-inspector with a very short timeout
+    result = asyncio.run(multi_inspector(action_plan, timeout=0.001))
+    
+    # Should not raise an exception and should return REQUIRES_HUMAN
+    assert result == ConsensusResult.REQUIRES_HUMAN
+
 if __name__ == "__main__":
     # Run tests directly
     test_all_inspectors_approve()
     test_any_inspector_rejects()
     test_mixed_results_require_human()
     test_inspector_exception_handling()
+    test_timeout_handling()
     print("All tests passed!")
