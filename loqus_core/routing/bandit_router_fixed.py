@@ -12,17 +12,6 @@ class ModelArm:
     count: int = 0
     total_reward: float = 0.0
 
-    def ucb1_score(self, total_pulls) -> float:
-        if self.count == 0:
-            return float('inf')
-        
-        if total_pulls <= 0:
-            return float('inf')
-        
-        exploitation = self.total_reward / self.count
-        exploration = math.sqrt(2 * math.log(total_pulls) / self.count)
-        
-        return exploitation + exploration
 
 class BanditRouter:
     def __init__(self):
