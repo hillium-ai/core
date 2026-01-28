@@ -2,6 +2,7 @@ import math
 from dataclasses import dataclass
 from typing import List, Optional
 
+
 class ModelArm:
     def __init__(self, name: str, size: str, speed: float, accuracy: float, cost: float, count: int = 0, total_reward: float = 0.0):
         self.name = name
@@ -33,4 +34,119 @@ class ModelArm:
         exploration = math.sqrt(2 * math.log(total_pulls) / self.count)
         
         return exploitation + exploration
-[<35;38;26M[<35;55;26M[<35;66;26M[<35;67;26M[<35;68;26M[<35;67;26M[<35;59;27M[<35;57;27M[<35;52;27M[<35;49;27M[<35;47;27M[<35;49;28M[<35;63;29M[<35;64;29M[<35;65;29M[<35;68;28M[<35;72;28M[<35;76;27M[<35;86;27M[<35;98;27M[<35;101;26M[<35;111;26M[<35;119;27M[<35;121;27M[<35;123;28M[<35;121;28M[<35;117;28M[<35;120;28M[<35;125;26M[<35;104;46M[<35;72;44M[<65;125;46M[<35;57;44M[<35;41;43M[<65;72;44M[<35;34;43M[<65;57;44M[<35;32;42M[<65;41;43M[<65;34;43M[<35;31;42M[<35;33;43M[<35;44;41M[<35;47;39M[<35;49;37M[<35;50;36M[<35;51;35M[<65;51;35M[<65;51;35M[<35;51;35M[<65;51;35M[<35;51;35M[<65;51;35M[<35;51;35M[<35;51;35M[<65;51;35M[<35;51;35M[<65;51;35M[<35;51;35M[<35;50;34M[<65;51;35M[<35;50;34M[<65;50;34M[<35;49;34M[<65;49;34M[<35;49;33M[<65;49;34M[<65;49;33M[<65;49;33M[<65;49;33M[<65;49;33M[<65;49;33M[<35;49;33M[<65;49;33M[<35;49;33M[<65;49;33M[<35;49;33M[<65;49;33M[<35;49;33M[<65;49;33M[<35;49;33M[<65;49;33M[<65;49;33M[<35;49;33M[<65;49;33M[<65;49;33M[<35;49;33M[<65;49;33M[I[<0;49;33m[<35;49;33M[<35;48;34M[<35;47;34M[<35;45;33M[<35;44;33M[<35;43;33M[<35;42;33M[<35;42;32M[<35;43;32M[<35;44;31M[<35;46;31M[<35;48;31M[<65;48;31M[<35;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<65;48;31M[<35;48;31M[<64;48;31M[<35;48;31M[<64;48;31M[<64;48;31M[<64;48;31M[<35;48;31M[<35;48;31M[<35;48;31M[<64;48;31M[<35;48;31M[<64;48;31M[<35;48;31M[<64;48;31M[<64;48;31M[<64;48;31M[<64;48;31M[<64;48;31M[<35;48;31M[<64;48;31M[<64;48;31M[<35;48;31M[<64;48;31M[<64;48;31M[<35;48;31M[<64;48;31M[<64;48;31M[<64;48;31M[<64;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<65;48;31M[<35;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<65;48;31M[<35;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<35;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<35;48;31M[<35;48;31M[<65;48;31M[<65;48;31M[<35;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<65;48;31M[<65;48;31M[<65;48;31M[<35;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<35;48;31M[<65;48;31M[<65;48;31M[<35;48;31M[<35;48;31M[<65;48;31M[<35;49;34M[<35;49;35M[<35;49;37M[<35;48;37M[<35;46;38M[<35;43;38M[<35;41;39M[<35;37;39M[<35;28;38M[<35;1;32M[<35;1;20M[<35;44;3M[<35;47;3M[<35;41;1M[<35;23;8M[<35;4;11M[<35;1;2M[<35;61;11M[<35;63;13M[<35;85;22M[<35;83;20M[<35;84;19M[<35;81;19M[<35;114;25M[<35;104;24M[<35;103;24M[<35;107;23M[<35;106;23M[<35;102;24M[<35;95;24M[<35;91;25M[<35;83;25M[<35;78;26M[<35;72;27M[<0;72;27M[<0;72;27m[<35;72;27M[<35;73;25M[<35;70;17M[<35;70;16M[<35;69;16M[<35;68;15M[<35;67;15M[<35;65;15M[<35;64;15M[<35;63;15M[<35;62;15M[<35;61;15M[<0;61;15M[<35;61;15M[<35;60;16M
+
+
+class BanditRouter:
+    def __init__(self):
+        self.arms = []
+        self.total_pulls = 0
+
+    def _ucb1_score(self, arm: ModelArm, total_pulls: int) -> float:
+        """
+        Calculate UCB1 score for a given arm.
+        
+        Args:
+            arm: The ModelArm to score
+            total_pulls: Total number of pulls so far
+        
+        Returns:
+            UCB1 score for the arm
+        """
+        if arm.count == 0:
+            return float('inf')  # Explore untried arms
+        
+        # Handle potential edge cases
+        if total_pulls <= 0:
+            return float('inf')  # If no pulls yet, explore all
+        
+        exploitation = arm.total_reward / arm.count
+        exploration = math.sqrt(2 * math.log(total_pulls) / arm.count)
+        
+        return exploitation + exploration
+
+    def select_arm(self, arms: List[ModelArm]) -> ModelArm:
+        """
+        Select the best arm using UCB1 algorithm.
+        
+        Args:
+            arms: List of available ModelArms
+        
+        Returns:
+            The selected ModelArm
+        """
+        if not arms:
+            raise ValueError("No arms available")
+        
+        best_arm = None
+        best_score = float('-inf')
+        
+        for arm in arms:
+            score = self._ucb1_score(arm, self.total_pulls)
+            if score > best_score:
+                best_score = score
+                best_arm = arm
+        
+        return best_arm
+
+    def route(self, confidence_threshold: float = 0.5) -> str:
+        """
+        Route to the best model based on UCB1 scores.
+        
+        Args:
+            confidence_threshold: Threshold for model selection confidence
+        
+        Returns:
+            Name of the selected model
+        """
+        if not self.arms:
+            return None
+        
+        best_arm = self.select_arm(self.arms)
+        return best_arm.name
+
+    def update_performance(self, model_name: str, reward: float, latency: float = 0.0):
+        """
+        Update the performance metrics for a specific model.
+        
+        Args:
+            model_name: Name of the model
+            reward: Reward received (e.g., accuracy)
+            latency: Latency of the model response
+        """
+        # Find the arm with the given name
+        for arm in self.arms:
+            if arm.name == model_name:
+                arm.count += 1
+                arm.total_reward += reward
+                self.total_pulls += 1
+                break
+        else:
+            # If the model doesn't exist, create a new arm
+            new_arm = ModelArm(
+                name=model_name,
+                size="unknown",
+                speed=latency,
+                accuracy=reward,
+                cost=0.0
+            )
+            new_arm.count = 1
+            new_arm.total_reward = reward
+            self.arms.append(new_arm)
+            self.total_pulls += 1
+
+    def get_all_stats(self) -> dict:
+        """
+        Get statistics for all models.
+        
+        Returns:
+            Dictionary containing statistics for all models
+        """
+        stats = {}
+        for arm in self.arms:
+            stats[arm.name] = {
+                "count": arm.count,
+                "total_reward": arm.total_reward,
+                "average_reward": arm.total_reward / arm.count if arm.count > 0 else 0.0,
+                "ucb1_score": arm.ucb1_score(self.total_pulls)
+            }
+        return stats
