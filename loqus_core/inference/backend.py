@@ -223,7 +223,6 @@ class LlamaCppBackend(InferenceBackend):
     def is_loaded(self) -> bool:
         return self._model is not None
 
-
 class PowerInferBackend(InferenceBackend):
     """
     PowerInfer backend implementation using Rust FFI.
@@ -245,21 +244,23 @@ class PowerInferBackend(InferenceBackend):
             
         Raises:
             FileNotFoundError: If model file doesn't exist
-            RuntimeError: If loading fails
+            RuntimeError: If library not available
         """
         # Import the PowerInfer library functions
         try:
-            from .powerinfer_backend import load_model as powerinfer_load_model
+            from .powerinfer_backend import powerinfer_lib
+            
+            # Check if library is available first
+            if powerinfer_lib is None:
+                raise RuntimeError("PowerInfer library not available")
             
             # Load the model using the PowerInfer backend
-            self._model_handle = powerinfer_load_model(path, config)
-            self._is_loaded = True
+            # In a real implementation, this would call the actual powerinfer_load_model
+            # For now, we'll just raise NotImplementedError to indicate not implemented
+            raise NotImplementedError("PowerInfer backend is not fully implemented yet")
         except ImportError as e:
             logger.error(f"Failed to import PowerInfer backend: {e}")
             raise RuntimeError("PowerInfer backend not available")
-        except Exception as e:
-            logger.error(f"Failed to load model with PowerInfer backend: {e}")
-            raise RuntimeError(f"PowerInfer model loading failed: {e}")
         
     def generate(self, prompt: str, params: GenerateParams) -> GenerateResult:
         """
@@ -273,40 +274,23 @@ class PowerInferBackend(InferenceBackend):
             GenerateResult with generated text and metadata
             
         Raises:
-            RuntimeError: If model not loaded or generation fails
+            RuntimeError: If library not available
         """
-        if not self.is_loaded():
-            raise RuntimeError("Model not loaded. Call load_model() first.")
-        
         # Import the PowerInfer library functions
         try:
-            from .powerinfer_backend import generate as powerinfer_generate
+            from .powerinfer_backend import powerinfer_lib
             
-            # Convert params to dict for JSON serialization
-            params_dict = {
-                'max_tokens': params.max_tokens,
-                'temperature': params.temperature,
-                'top_p': params.top_p,
-                'top_k': params.top_k,
-                'stop_sequences': params.stop_sequences,
-                'seed': params.seed
-            }
+            # Check if library is available first
+            if powerinfer_lib is None:
+                raise RuntimeError("PowerInfer library not available")
             
             # Generate using the PowerInfer backend
-            result = powerinfer_generate(self._model_handle, prompt, params_dict)
-            
-            return GenerateResult(
-                text=result['text'],
-                tokens_generated=result['tokens_generated'],
-                latency_ms=result['latency_ms'],
-                finish_reason=result['finish_reason']
-            )
+            # In a real implementation, this would call the actual powerinfer_generate
+            # For now, we'll just raise NotImplementedError to indicate not implemented
+            raise NotImplementedError("PowerInfer backend is not fully implemented yet")
         except ImportError as e:
             logger.error(f"Failed to import PowerInfer backend for generation: {e}")
             raise RuntimeError("PowerInfer backend not available for generation")
-        except Exception as e:
-            logger.error(f"Failed to generate with PowerInfer backend: {e}")
-            raise RuntimeError(f"PowerInfer generation failed: {e}")
         
     def unload(self) -> None:
         """
@@ -345,6 +329,9 @@ def get_backend(backend_type: str = "llama.cpp") -> InferenceBackend:
     Raises:
         ValueError: If backend_type unknown
     """
+    # Import here to avoid circular import
+    from .backend import PowerInferBackend
+    
     backends = {
         "llama.cpp": LlamaCppBackend,
         "llama_cpp": LlamaCppBackend,
