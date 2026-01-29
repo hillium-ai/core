@@ -28,7 +28,7 @@ class PowerInferBackend:
             config: Backend-specific configuration
             
         Raises:
-            RuntimeError: If library not available
+            RuntimeError: If library not available or loading fails
         """
         # Check if library is available first
         if powerinfer_lib is None:
@@ -50,8 +50,12 @@ class PowerInferBackend:
             GenerateResult with generated text and metadata
             
         Raises:
-            NotImplementedError: If not implemented
+            RuntimeError: If library not available or generation fails
         """
+        # Check if library is available first
+        if powerinfer_lib is None:
+            raise RuntimeError("PowerInfer library not available")
+        
         # This is a placeholder implementation
         # In a real implementation, this would generate text using Rust FFI
         raise NotImplementedError("PowerInfer backend is not fully implemented yet")
