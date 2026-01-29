@@ -226,27 +226,110 @@ class LlamaCppBackend(InferenceBackend):
 
 class PowerInferBackend(InferenceBackend):
     """
-    Future backend for sparse inference.
+    PowerInfer backend implementation using Rust FFI.
     
-    NOT IMPLEMENTED for MVP. Returns NotImplementedError.
-    See ADR-015 for architecture details.
+    This backend provides hybrid CPU/GPU sparse inference for HilliumOS.
     """
     
+    def __init__(self):
+        self._model_handle = None
+        self._is_loaded = False
+        
     def load_model(self, path: str, config: Dict[str, Any]) -> None:
-        logger.warning("PowerInferBackend is not implemented for MVP")
-        raise NotImplementedError(
-            "PowerInfer integration is planned for post-MVP (v8.6+). "
-            "Use LlamaCppBackend for current implementation."
-        )
-    
+        """
+        Load a model from disk using PowerInfer backend.
+        
+        Args:
+            path: Path to model file (GGUF format)
+            config: Backend-specific configuration
+            
+        Raises:
+            FileNotFoundError: If model file doesn't exist
+            RuntimeError: If loading fails
+        """
+        # Import the PowerInfer library functions
+        try:
+            from .powerinfer_backend import load_model as powerinfer_load_model
+            
+            # Load the model using the PowerInfer backend
+            self._model_handle = powerinfer_load_model(path, config)
+            self._is_loaded = True
+        except ImportError as e:
+            logger.error(f"Failed to import PowerInfer backend: {e}")
+            raise RuntimeError("PowerInfer backend not available")
+        except Exception as e:
+            logger.error(f"Failed to load model with PowerInfer backend: {e}")
+            raise RuntimeError(f"PowerInfer model loading failed: {e}")
+        
     def generate(self, prompt: str, params: GenerateParams) -> GenerateResult:
-        raise NotImplementedError("PowerInferBackend not implemented")
-    
+        """
+        Generate text from prompt using PowerInfer backend.
+        
+        Args:
+            prompt: Input prompt
+            params: Generation parameters
+            
+        Returns:
+            GenerateResult with generated text and metadata
+            
+        Raises:
+            RuntimeError: If model not loaded or generation fails
+        """
+        if not self.is_loaded():
+            raise RuntimeError("Model not loaded. Call load_model() first.")
+        
+        # Import the PowerInfer library functions
+        try:
+            from .powerinfer_backend import generate as powerinfer_generate
+            
+            # Convert params to dict for JSON serialization
+            params_dict = {
+                'max_tokens': params.max_tokens,
+                'temperature': params.temperature,
+                'top_p': params.top_p,
+                'top_k': params.top_k,
+                'stop_sequences': params.stop_sequences,
+                'seed': params.seed
+            }
+            
+            # Generate using the PowerInfer backend
+            result = powerinfer_generate(self._model_handle, prompt, params_dict)
+            
+            return GenerateResult(
+                text=result['text'],
+                tokens_generated=result['tokens_generated'],
+                latency_ms=result['latency_ms'],
+                finish_reason=result['finish_reason']
+            )
+        except ImportError as e:
+            logger.error(f"Failed to import PowerInfer backend for generation: {e}")
+            raise RuntimeError("PowerInfer backend not available for generation")
+        except Exception as e:
+            logger.error(f"Failed to generate with PowerInfer backend: {e}")
+            raise RuntimeError(f"PowerInfer generation failed: {e}")
+        
     def unload(self) -> None:
-        pass  # Nothing to unload
-    
+        """
+        Unload model and release resources.
+        """
+        if self._is_loaded and self._model_handle is not None:
+            try:
+                from .powerinfer_backend import destroy_model as powerinfer_destroy_model
+                powerinfer_destroy_model(self._model_handle)
+                self._model_handle = None
+                self._is_loaded = False
+            except ImportError as e:
+                logger.error(f"Failed to import PowerInfer backend for unload: {e}")
+                raise RuntimeError("PowerInfer backend not available for unload")
+            except Exception as e:
+                logger.error(f"Failed to unload model with PowerInfer backend: {e}")
+                raise RuntimeError(f"PowerInfer model unload failed: {e}")
+        
     def is_loaded(self) -> bool:
-        return False
+        """
+        Check if model is currently loaded.
+        """
+        return self._is_loaded
 
 
 def get_backend(backend_type: str = "llama.cpp") -> InferenceBackend:

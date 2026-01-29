@@ -9,6 +9,7 @@ members = [
     "hipposerver",
     "crates/hillium_backend",
     "motor_cortex",
+    "crates/powerinfer-rs",
 ]
 
 [workspace.package]
