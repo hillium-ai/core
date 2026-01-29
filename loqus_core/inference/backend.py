@@ -102,6 +102,7 @@ class LlamaCppBackend(InferenceBackend):
     def __init__(self):
         self._model = None
         self._model_path: Optional[str] = None
+        self._is_loaded = False
     
     def load_model(self, path: str, config: Dict[str, Any]) -> None:
         """Load model using llama-cpp-python."""
@@ -221,7 +222,11 @@ class LlamaCppBackend(InferenceBackend):
                 raise RuntimeError(f"Error during model unload: {e}")
         
     def is_loaded(self) -> bool:
-        return self._model is not None
+        """
+        Check if model is currently loaded.
+        """
+        return self._is_loaded
+
 
 class PowerInferBackend(InferenceBackend):
     """
@@ -243,24 +248,11 @@ class PowerInferBackend(InferenceBackend):
             config: Backend-specific configuration
             
         Raises:
-            FileNotFoundError: If model file doesn't exist
-            RuntimeError: If library not available
+            NotImplementedError: If not implemented
         """
-        # Import the PowerInfer library functions
-        try:
-            from .powerinfer_backend import powerinfer_lib
-            
-            # Check if library is available first
-            if powerinfer_lib is None:
-                raise RuntimeError("PowerInfer library not available")
-            
-            # Load the model using the PowerInfer backend
-            # In a real implementation, this would call the actual powerinfer_load_model
-            # For now, we'll just raise NotImplementedError to indicate not implemented
-            raise NotImplementedError("PowerInfer backend is not fully implemented yet")
-        except ImportError as e:
-            logger.error(f"Failed to import PowerInfer backend: {e}")
-            raise RuntimeError("PowerInfer backend not available")
+        # This is a placeholder implementation
+        # In a real implementation, this would load a model using Rust FFI
+        raise NotImplementedError("PowerInfer backend is not fully implemented yet")
         
     def generate(self, prompt: str, params: GenerateParams) -> GenerateResult:
         """
@@ -274,40 +266,19 @@ class PowerInferBackend(InferenceBackend):
             GenerateResult with generated text and metadata
             
         Raises:
-            RuntimeError: If library not available
+            NotImplementedError: If not implemented
         """
-        # Import the PowerInfer library functions
-        try:
-            from .powerinfer_backend import powerinfer_lib
-            
-            # Check if library is available first
-            if powerinfer_lib is None:
-                raise RuntimeError("PowerInfer library not available")
-            
-            # Generate using the PowerInfer backend
-            # In a real implementation, this would call the actual powerinfer_generate
-            # For now, we'll just raise NotImplementedError to indicate not implemented
-            raise NotImplementedError("PowerInfer backend is not fully implemented yet")
-        except ImportError as e:
-            logger.error(f"Failed to import PowerInfer backend for generation: {e}")
-            raise RuntimeError("PowerInfer backend not available for generation")
+        # This is a placeholder implementation
+        # In a real implementation, this would generate text using Rust FFI
+        raise NotImplementedError("PowerInfer backend is not fully implemented yet")
         
     def unload(self) -> None:
         """
         Unload model and release resources.
         """
-        if self._is_loaded and self._model_handle is not None:
-            try:
-                from .powerinfer_backend import destroy_model as powerinfer_destroy_model
-                powerinfer_destroy_model(self._model_handle)
-                self._model_handle = None
-                self._is_loaded = False
-            except ImportError as e:
-                logger.error(f"Failed to import PowerInfer backend for unload: {e}")
-                raise RuntimeError("PowerInfer backend not available for unload")
-            except Exception as e:
-                logger.error(f"Failed to unload model with PowerInfer backend: {e}")
-                raise RuntimeError(f"PowerInfer model unload failed: {e}")
+        self._model_handle = None
+        self._is_loaded = False
+        logger.info("PowerInfer model unloaded")
         
     def is_loaded(self) -> bool:
         """
@@ -330,7 +301,10 @@ def get_backend(backend_type: str = "llama.cpp") -> InferenceBackend:
         ValueError: If backend_type unknown
     """
     # Import here to avoid circular import
-    from .backend import PowerInferBackend
+    if backend_type.lower() == "powerinfer":
+        from .powerinfer_backend import PowerInferBackend
+    else:
+        from .backend import LlamaCppBackend
     
     backends = {
         "llama.cpp": LlamaCppBackend,
