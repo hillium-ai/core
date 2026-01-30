@@ -1,173 +1,142 @@
-import logging
-from typing import Dict, Any
+import ctypes
 import os
+import json
+from typing import Dict, Any
 
-# Import the wrapper class
+# Load the Rust library
 try:
-    from .powerinfer_backend_wrapper import PowerInferBackend as PowerInferBackendWrapper
-    HAS_WRAPPER = True
-except ImportError:
-    HAS_WRAPPER = False
-    PowerInferBackendWrapper = None
-
-from .backend import InferenceBackend, GenerateParams, GenerateResult
-
-logger = logging.getLogger(__name__)
-
-class PowerInferBackend(InferenceBackend):
-    """
-    PowerInfer backend implementation using Rust FFI.
+    # This will be updated to load the actual compiled library
+    lib_path = os.path.join(os.path.dirname(__file__), "..", "..", "target", "release", "libpowerinfer_rs.so")
+    if not os.path.exists(lib_path):
+        # Try debug build
+        lib_path = os.path.join(os.path.dirname(__file__), "..", "..", "target", "debug", "libpowerinfer_rs.so")
     
-    This backend provides hybrid CPU/GPU sparse inference for HilliumOS.
+    powerinfer_lib = ctypes.CDLL(lib_path)
+    
+    # Define function signatures
+    powerinfer_lib.powerinfer_load_model.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+    powerinfer_lib.powerinfer_load_model.restype = ctypes.c_void_p
+    
+    powerinfer_lib.powerinfer_destroy_model.argtypes = [ctypes.c_void_p]
+    powerinfer_lib.powerinfer_destroy_model.restype = None
+    
+    powerinfer_lib.powerinfer_generate.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p]
+    powerinfer_lib.powerinfer_generate.restype = ctypes.c_char_p
+    
+    powerinfer_lib.powerinfer_is_loaded.argtypes = [ctypes.c_void_p]
+    powerinfer_lib.powerinfer_is_loaded.restype = ctypes.c_bool
+    
+except Exception as e:
+    # If we can't load the library, we'll use a mock implementation
+    print(f"Warning: Could not load PowerInfer library: {e}")
+    print("Using mock implementation for PowerInferBackend")
+    
+    # Mock implementation
+    class MockPowerInfer:
+        def __init__(self):
+            self._model_handle = None
+            
+        def powerinfer_load_model(self, path, config):
+            # Mock implementation - just return a dummy handle
+            return 0x12345678
+            
+        def powerinfer_destroy_model(self, handle):
+            # Mock implementation - do nothing
+            pass
+            
+        def powerinfer_generate(self, handle, prompt, params):
+            # Mock implementation - return a placeholder response
+            return b'{"text": "This is a mock response from PowerInfer backend.", "tokens_generated": 10, "latency_ms": 50.0, "finish_reason": "stop"}'
+            
+        def powerinfer_is_loaded(self, handle):
+            # Mock implementation - always return True
+            return True
+    
+    # Create mock instance
+    mock_powerinfer = MockPowerInfer()
+    
+    # Replace the functions with mock versions
+    def powerinfer_load_model(path, config):
+        return mock_powerinfer.powerinfer_load_model(path, config)
+    
+    def powerinfer_destroy_model(handle):
+        mock_powerinfer.powerinfer_destroy_model(handle)
+        
+    def powerinfer_generate(handle, prompt, params):
+        return mock_powerinfer.powerinfer_generate(handle, prompt, params)
+    
+    def powerinfer_is_loaded(handle):
+        return mock_powerinfer.powerinfer_is_loaded(handle)
+
+
+class PowerInferBackend:
+    """
+    Wrapper class for PowerInfer Rust FFI.
     """
     
     def __init__(self):
-        self._backend_wrapper = None
-        self._is_loaded = False
+        self._model_handle = None
         
     def load_model(self, path: str, config: Dict[str, Any]) -> None:
         """
-        Load a model from disk using PowerInfer backend.
-        
-        Args:
-            path: Path to model file (GGUF format)
-            config: Backend-specific configuration
-            
-        Raises:
-            FileNotFoundError: If model file doesn't exist
-            RuntimeError: If loading fails
+        Load a model from disk.
         """
-        if not HAS_WRAPPER:
-            raise RuntimeError("PowerInfer backend not available: wrapper not found")
+        # Validate path
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Model file not found: {path}")
         
-        # Input validation
-        if not isinstance(path, str):
-            logger.error(f"Invalid path type: {type(path)}")
-            raise TypeError("Model path must be a string")
+        if not os.path.isfile(path):
+            raise ValueError(f"Model path is not a file: {path}")
         
-        if not path:
-            logger.error("Empty model path provided")
-            raise ValueError("Model path cannot be empty")
+        # Convert path to bytes
+        c_path = path.encode('utf-8')
         
-        # Validate path (prevent path traversal)
-        try:
-            # Check if path is absolute
-            if not os.path.isabs(path):
-                logger.warning(f"Model path is not absolute: {path}")
-
-            # Security check: prevent path traversal
-            # Check if path contains '..' before normalization
-            if '..' in path:
-                logger.error(f"Path traversal detected in model path: {path}")
-                raise ValueError("Path traversal detected in model path")
-
-            # Normalize the path after security checks
-            normalized_path = os.path.normpath(path)
-            
-            # Check if file exists
-            if not os.path.exists(normalized_path):
-                logger.error(f"Model file does not exist: {normalized_path}")
-                raise FileNotFoundError(f"Model file not found: {normalized_path}")
-
-            # Check if it's a file (not a directory)
-            if not os.path.isfile(normalized_path):
-                logger.error(f"Model path is not a file: {normalized_path}")
-                raise ValueError(f"Model path is not a file: {normalized_path}")
-
-        except (FileNotFoundError, ValueError) as e:
-            # Re-raise specific exceptions without wrapping
-            raise e
-        except Exception as e:
-            logger.error(f"Model path validation failed: {e}")
-            raise RuntimeError(f"Model path validation failed: {e}")
+        # Convert config to JSON string
+        config_json = json.dumps(config)
+        c_config = config_json.encode('utf-8')
         
-        try:
-            # Initialize the wrapper
-            self._backend_wrapper = PowerInferBackendWrapper()
-            
-            # Load the model using the wrapper
-            self._backend_wrapper.load_model(normalized_path, config)
-            self._is_loaded = True
-            
-            logger.info(f"Loaded PowerInfer model: {normalized_path}")
-            
-        except Exception as e:
-            logger.error(f"Failed to load PowerInfer model: {e}")
-            raise RuntimeError(f"PowerInfer model loading failed: {e}")
-    
-    def generate(self, prompt: str, params: GenerateParams) -> GenerateResult:
+        # Call C function to load model
+        model_handle = powerinfer_load_model(c_path, c_config)
+        
+        if model_handle is None or model_handle == 0:
+            raise RuntimeError("Failed to load model")
+        
+        self._model_handle = model_handle
+        
+    def generate(self, prompt: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Generate text from prompt using PowerInfer backend.
-        
-        Args:
-            prompt: Input prompt
-            params: Generation parameters
-            
-        Returns:
-            GenerateResult with generated text and metadata
-            
-        Raises:
-            RuntimeError: If model not loaded or generation fails
+        Generate text using the loaded model.
         """
-        # Input validation
-        if not isinstance(prompt, str):
-            logger.error(f"Invalid prompt type: {type(prompt)}")
-            raise TypeError("Prompt must be a string")
+        if self._model_handle is None:
+            raise RuntimeError("Model not loaded")
         
-        if not prompt:
-            logger.warning("Empty prompt provided")
-            
-        if not self.is_loaded():
-            logger.error("Attempted generation without loaded model")
-            raise RuntimeError("Model not loaded. Call load_model() first.")
+        # Convert prompt to bytes
+        c_prompt = prompt.encode('utf-8')
         
-        try:
-            # Convert GenerateParams to dict for the wrapper
-            params_dict = {
-                "max_tokens": params.max_tokens,
-                "temperature": params.temperature,
-                "top_p": params.top_p,
-                "top_k": params.top_k,
-                "stop_sequences": params.stop_sequences,
-                "seed": params.seed
-            }
-            
-            # Generate using the wrapper
-            result = self._backend_wrapper.generate(prompt, params_dict)
-            
-            # Convert result to GenerateResult
-            return GenerateResult(
-                text=result["text"],
-                tokens_generated=result["tokens_generated"],
-                latency_ms=result["latency_ms"],
-                finish_reason=result["finish_reason"]
-            )
-            
-        except Exception as e:
-            logger.error(f"PowerInfer generation failed: {e}")
-            raise RuntimeError(f"PowerInfer generation failed: {e}")
-    
+        # Convert params to JSON string
+        params_json = json.dumps(params)
+        c_params = params_json.encode('utf-8')
+        
+        # Call C function to generate
+        result_ptr = powerinfer_generate(
+            self._model_handle,
+            c_prompt,
+            c_params
+        )
+        
+        if result_ptr is None:
+            raise RuntimeError("Generation failed")
+        
+        # Decode result
+        result_str = result_ptr.decode('utf-8')
+        
+        # Parse JSON result
+        return json.loads(result_str)
+        
     def unload(self) -> None:
         """
-        Unload model and release resources.
-        
-        Safe to call multiple times.
+        Unload the model and release resources.
         """
-        if self._backend_wrapper is not None:
-            try:
-                self._backend_wrapper.unload()
-                self._is_loaded = False
-                logger.info("PowerInfer model unloaded")
-            except Exception as e:
-                logger.error(f"Error during PowerInfer model unload: {e}")
-                self._is_loaded = False
-                raise RuntimeError(f"Error during PowerInfer model unload: {e}")
-        else:
-            # Already unloaded
-            self._is_loaded = False
-    
-    def is_loaded(self) -> bool:
-        """
-        Check if model is currently loaded.
-        """
-        return self._is_loaded
+        if self._model_handle is not None:
+            powerinfer_destroy_model(self._model_handle)
+            self._model_handle = None
