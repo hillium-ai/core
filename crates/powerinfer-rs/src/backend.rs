@@ -1,4 +1,4 @@
-//! PowerInferBackend implementation
+//! PowerInfer backend implementation
 
 use std::collections::HashMap;
 use std::ffi::CString;

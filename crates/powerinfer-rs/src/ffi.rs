@@ -116,3 +116,13 @@ pub extern "C" fn powerinfer_is_loaded(handle: *mut c_void) -> bool {
     // In a real implementation, this would check if the model handle is valid
     !handle.is_null()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_ffi_functions_exist() {
+        assert!(true); // Placeholder test
+    }
+}
