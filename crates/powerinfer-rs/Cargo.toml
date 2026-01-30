@@ -16,3 +16,6 @@ cbindgen = "0.24"
 
 [features]
 debug = []
+
+[dev-dependencies]
+mockall = "0.11"
