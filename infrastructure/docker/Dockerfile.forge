@@ -30,6 +30,24 @@ RUN CMAKE_ARGS="-DLLAMA_BLAS=ON -DLLAMA_OPENBLAS=ON" FORCE_CMAKE=1 python3.11 -m
     webrtcvad \
     pyaudio
 
+# --- LAYER 3b: POWERINFER C++ (persistent for Levitate tests / powerinfer-rs) ---
+# Levitate runs cargo build and pytest inside Forge; powerinfer-rs may link against
+# the native PowerInfer (C++). Ref: Hillium-Forge/docs/ANALISIS_LEVITATE_FORGE_VOLUMENES.md
+ARG POWERINFER_REPO=https://github.com/SJTU-IPADS/PowerInfer
+ARG POWERINFER_BRANCH=main
+RUN git clone --depth 1 --branch "${POWERINFER_BRANCH}" "${POWERINFER_REPO}" /tmp/PowerInfer \
+    && cd /tmp/PowerInfer \
+    && cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=ON \
+        -DLLAMA_BLAS=ON \
+        -DLLAMA_OPENBLAS=ON \
+    && cmake --build build -j$(nproc) \
+    && cmake --install build --prefix /usr/local \
+    && rm -rf /tmp/PowerInfer
+ENV LD_LIBRARY_PATH=/usr/local/lib \
+    LIBRARY_PATH=/usr/local/lib
+
 # --- LAYER 4: APP DEPENDENCIES (SEMI-STABLE) ---
 RUN python3.11 -m pip install --no-cache-dir --break-system-packages \
     pytest>=7.0 pytest-asyncio mypy black ruff \
