@@ -290,30 +290,24 @@ class PowerInferBackend(InferenceBackend):
 def get_backend(backend_type: str = "llama.cpp") -> InferenceBackend:
     """
     Factory function to get inference backend.
-    
+
     Args:
         backend_type: "llama.cpp" or "powerinfer"
-        
+
     Returns:
         InferenceBackend instance
-        
+
     Raises:
         ValueError: If backend_type unknown
     """
-    # Import here to avoid circular import
-    if backend_type.lower() == "powerinfer":
-        from .powerinfer_backend import PowerInferBackend
-    else:
-        from .backend import LlamaCppBackend
-    
     backends = {
         "llama.cpp": LlamaCppBackend,
         "llama_cpp": LlamaCppBackend,
         "powerinfer": PowerInferBackend,
     }
-    
+
     if backend_type.lower() not in backends:
         logger.error(f"Unknown backend: {backend_type}")
         raise ValueError(f"Unknown backend: {backend_type}. Available: {list(backends.keys())}")
-    
+
     return backends[backend_type.lower()]()
