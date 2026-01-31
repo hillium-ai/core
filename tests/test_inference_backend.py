@@ -1,5 +1,3 @@
-"""Unit tests for Inference Backend Interface."""
-
 import pytest
 from unittest.mock import Mock, patch
 
@@ -49,15 +47,23 @@ def test_powerinfer_backend_implements_interface():
     assert not backend.is_loaded()
 
 
-def test_powerinfer_not_implemented():
-    """PowerInfer should raise NotImplementedError."""
+def test_powerinfer_backend_mock_mode():
+    """Test that PowerInferBackend works in mock mode when pyo3_powerinfer is not available."""
+    # Create a backend instance
     backend = PowerInferBackend()
     
-    with pytest.raises(NotImplementedError):
-        backend.load_model("/fake/path", {})
+    # Should be able to load model in mock mode
+    backend.load_model("/fake/path", {})
+    assert backend.is_loaded()
     
-    with pytest.raises(NotImplementedError):
-        backend.generate("test", GenerateParams())
+    # Should be able to generate in mock mode
+    result = backend.generate("test prompt", GenerateParams())
+    assert isinstance(result, GenerateResult)
+    assert "[MOCK]" in result.text
+    
+    # Should be able to unload
+    backend.unload()
+    assert not backend.is_loaded()
 
 
 def test_backend_factory():

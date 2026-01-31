@@ -11,14 +11,11 @@ import platform
 try:
     from llama_cpp import Llama
 except ImportError:
-    LLAMA_CPP_AVAILABLE = False
-    Llama = None
-    LLAMA_CPP_AVAILABLE = False
     Llama = None
 
 # Import backend classes
 try:
-    from loqus_core.inference.backend import LlamaCppBackend, PowerInferBackend, InferenceBackend
+    from loqus_core.inference.backend import LlamaCppBackend, PowerInferBackend, InferenceBackend, get_backend
     BACKENDS_AVAILABLE = True
 except ImportError:
     BACKENDS_AVAILABLE = False
@@ -29,7 +26,7 @@ class ModelStatus(Enum):
     """Model loading/unloading status"""
     UNLOADED = "unloaded"
     LOADING = "loading"
-    READY = "ready"
+    LOADED = "loaded"
     ERROR = "error"
 
 class ModelConfig:
@@ -44,7 +41,7 @@ class NativeModelManager:
     
     def __init__(self, backend_type: str = "llama.cpp"):
         self.backend_type = backend_type
-        self.model = None
+        self.backend: Optional[InferenceBackend] = None
         self.status = ModelStatus.UNLOADED
         self.config = None
         self.hardware_info = self._detect_hardware()
@@ -153,15 +150,6 @@ class NativeModelManager:
         - CUDA (Jetson): n_gpu_layers=-1 (all layers on GPU)
         - CPU (Forge): n_gpu_layers=0 (all layers on CPU, slower but works)
         """
-        if self.backend_type == "powerinfer":
-            # For PowerInfer backend, we would initialize the PowerInfer backend here
-            # This is a placeholder - actual implementation would depend on PowerInfer specifics
-            print("⚠️  PowerInfer backend selected. This is a placeholder implementation.")
-            # In a real implementation, we would initialize PowerInfer backend here
-            # For now, we'll just return True to indicate success
-            self.status = ModelStatus.READY
-            return True
-        
         if not BACKENDS_AVAILABLE:
             raise ImportError("Required backend classes not available")
         
@@ -175,52 +163,22 @@ class NativeModelManager:
             start_time = time.time()
             accelerator = self.hardware_info["accelerator"]
             
-            # Determine n_gpu_layers based on environment
-            if accelerator == "metal":
-                # macOS with Apple Silicon - use all layers on Metal GPU
-                n_gpu_layers = -1
-            elif accelerator == "cuda":
-                # Jetson/Linux with NVIDIA GPU - use all layers on CUDA
-                n_gpu_layers = -1
-            else:
-                # CPU only (Forge container or no GPU available)
-                # Force CPU-only inference
-                n_gpu_layers = 0
-                
-            # Allow config override if explicitly set to a specific value
-            if config.n_gpu_layers >= 0:
-                n_gpu_layers = config.n_gpu_layers
+            # Initialize backend
+            self.backend = get_backend(self.backend_type)
             
-            # Warn if running heavy inference in Forge (not recommended)
-            if self.hardware_info.get("is_forge_container", False):
-                print("⚠️  WARNING: Running in Forge container (CPU-only). "
-                      "Inference will be slow. Use for testing only.")
+            # Prepare configuration for backend
+            backend_config = {
+                "n_ctx": config.n_ctx,
+                "n_gpu_layers": config.n_gpu_layers,
+                "verbose": False
+            }
             
-            # Use the new backend interface
-            if self.backend_type == "llama.cpp":
-                # Create LlamaCppBackend instance
-                backend = LlamaCppBackend()
-                
-                # Prepare configuration for backend
-                backend_config = {
-                    "n_ctx": config.n_ctx,
-                    "n_gpu_layers": n_gpu_layers,
-                    "verbose": False
-                }
-                
-                # Load model using backend
-                backend.load_model(config.model_path, backend_config)
-                
-                # Store reference to backend
-                self.model = backend
-            else:
-                # Handle unknown backend type
-                raise ValueError(f"Unsupported backend type: {self.backend_type}")
+            # Load model using backend
+            self.backend.load_model(config.model_path, backend_config)
             
-            self.status = ModelStatus.READY
+            self.status = ModelStatus.LOADED
             load_time = time.time() - start_time
-            print(f"✅ Model loaded in {load_time:.2f}s (accelerator: {accelerator}, "
-                  f"gpu_layers: {n_gpu_layers})")
+            print(f"✅ Model loaded in {load_time:.2f}s (accelerator: {accelerator})")
             return True
             
         except Exception as e:
@@ -233,15 +191,10 @@ class NativeModelManager:
         if self.status == ModelStatus.UNLOADED:
             return True
         
-        if self.model is not None:
+        if self.backend is not None:
             try:
-                # Check if it's a backend instance and use its unload method
-                if hasattr(self.model, 'unload'):
-                    self.model.unload()
-                else:
-                    # Fallback to direct deletion for legacy Llama instances
-                    del self.model
-                self.model = None
+                self.backend.unload()
+                self.backend = None
             except:
                 pass
         
@@ -251,21 +204,21 @@ class NativeModelManager:
     
     def generate(self, prompt: str, max_tokens: int = 128, temperature: float = 0.7) -> str:
         """Generate text from prompt"""
-        if self.status != ModelStatus.READY or self.model is None:
+        if self.status != ModelStatus.LOADED or self.backend is None:
             raise RuntimeError("Model not loaded")
         
         # Use the backend's generate method
-        if self.backend_type == "llama.cpp" and isinstance(self.model, LlamaCppBackend):
-            # Use the backend's generate method
-                        # Pass parameters directly to backend's generate method
+        if self.backend is not None:
+            # Pass parameters directly to backend's generate method
+            from loqus_core.inference.backend import GenerateParams
             params = GenerateParams(max_tokens=max_tokens, temperature=temperature)
             start_time = time.time()
-            output = self.model.generate(prompt, params)
+            output = self.backend.generate(prompt, params)
             generation_time_ms = (time.time() - start_time) * 1000  # Convert to milliseconds
             
             # Note: This measures total generation time, not true TTFT (which requires streaming)
             print(f"Generation time: {generation_time_ms:.1f}ms")
-            return output
+            return output.text
         else:
             # Fallback to original method for other backends or if model is not a backend
             # This should not happen with our current implementation
@@ -276,7 +229,7 @@ class NativeModelManager:
         return {
             "status": self.status.value,
             "hardware": self.hardware_info,
-            "model_loaded": self.model is not None,
+            "model_loaded": self.backend is not None,
             "can_accelerate": self.can_use_gpu(),
             "environment": self.get_environment_type()
         }
