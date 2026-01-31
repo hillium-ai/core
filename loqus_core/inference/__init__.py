@@ -1,4 +1,4 @@
-from .inference import (
+from .backend import (
     InferenceBackend,
     LlamaCppBackend,
     PowerInferBackend,
