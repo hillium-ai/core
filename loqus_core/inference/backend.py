@@ -19,7 +19,7 @@ class GenerateParams:
     seed: Optional[int] = None
 
 
-@dataclass  
+@dataclass
 class GenerateResult:
     """Result from text generation."""
     text: str
@@ -380,9 +380,13 @@ class PowerInferBackend(InferenceBackend):
         """
         Check if model is currently loaded.
         """
-        if self._ffi_module is None or self._model_handle is None:
+        if self._ffi_module is None:
+            # Mock mode - rely on internal flag
+            return self._is_loaded
+
+        if self._model_handle is None:
             return False
-        
+
         try:
             return self._ffi_module.powerinfer_is_loaded(self._model_handle)
         except Exception:
