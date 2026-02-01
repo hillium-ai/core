@@ -1,125 +1,76 @@
 #!/usr/bin/env python3
-"""
-PowerInfer FFI module for Python.
 
-This module provides Python bindings to the Rust PowerInfer library.
+"""
+PowerInfer FFI Helper Module
+
+This module provides ctypes-based interface to the Rust PowerInfer library.
 """
 
+import ctypes
 import os
-import sys
-from typing import Dict, Any, Optional
+from typing import Optional
 
-# Try to import the Rust FFI module
-try:
-    # This will be replaced with the actual Rust FFI module
-    import pyo3_powerinfer
-    _HAS_RUST_FFI = True
-    _RUST_FFI = pyo3_powerinfer
-except ImportError:
-    _HAS_RUST_FFI = False
-    _RUST_FFI = None
+# Global FFI handle
+_powerinfer_lib = None
 
 
-# Mock implementations for when Rust FFI is not available
-def powerinfer_load_model(path: str, config: Dict[str, Any]) -> Optional[str]:
+def load_powerinfer_library() -> Optional[ctypes.CDLL]:
     """
-    Mock implementation for loading a model.
+    Load the PowerInfer Rust library if available.
     
-    Args:
-        path: Path to model file
-        config: Model configuration
-        
     Returns:
-        Mock model handle (string) or None on failure
+        ctypes.CDLL object if library loaded successfully, None otherwise
     """
-    if not _HAS_RUST_FFI:
-        print("Warning: Using mock PowerInfer backend (Rust FFI not available)")
-        return "mock_model_handle"
+    global _powerinfer_lib
     
-    try:
-        return _RUST_FFI.powerinfer_load_model(path, config)
-    except Exception as e:
-        print(f"Error in powerinfer_load_model: {e}")
-        return None
+    if _powerinfer_lib is not None:
+        return _powerinfer_lib
+    
+    # Look for the library in standard locations
+    lib_paths = [
+        "target/release/libpowerinfer_rs.so",
+        "target/debug/libpowerinfer_rs.so",
+        "libpowerinfer_rs.so"
+    ]
+    
+    for path in lib_paths:
+        if os.path.exists(path):
+            try:
+                _powerinfer_lib = ctypes.CDLL(path)
+                print(f"Loaded PowerInfer library from {path}")
+                return _powerinfer_lib
+            except Exception as e:
+                print(f"Failed to load PowerInfer library from {path}: {e}")
+                continue
+    
+    print("PowerInfer library not found, falling back to mock mode")
+    return None
 
 
-def powerinfer_generate(model_handle: str, prompt: str, params: Dict[str, Any]) -> Optional[str]:
+def get_powerinfer_library() -> Optional[ctypes.CDLL]:
     """
-    Mock implementation for generating text.
+    Get the PowerInfer library handle, loading it if necessary.
     
-    Args:
-        model_handle: Handle to loaded model
-        prompt: Input prompt
-        params: Generation parameters
-        
     Returns:
-        JSON string with result or None on failure
+        ctypes.CDLL object or None if not available
     """
-    if not _HAS_RUST_FFI:
-        # Return mock result
-        import json
-        result = {
-            "text": f"[MOCK] Generated text for: {prompt}",
-            "tokens_generated": len(prompt.split()),
-            "latency_ms": 10.0,
-            "finish_reason": "stop"
-        }
-        return json.dumps(result)
+    global _powerinfer_lib
     
-    try:
-        return _RUST_FFI.powerinfer_generate(model_handle, prompt, params)
-    except Exception as e:
-        print(f"Error in powerinfer_generate: {e}")
-        return None
+    if _powerinfer_lib is None:
+        return load_powerinfer_library()
+    
+    return _powerinfer_lib
 
 
-def powerinfer_destroy_model(model_handle: str) -> bool:
+def is_powerinfer_available() -> bool:
     """
-    Mock implementation for destroying a model.
+    Check if PowerInfer library is available.
     
-    Args:
-        model_handle: Handle to model to destroy
-        
     Returns:
-        True on success, False on failure
+        True if library is available, False otherwise
     """
-    if not _HAS_RUST_FFI:
-        print("Warning: Using mock PowerInfer backend (Rust FFI not available)")
-        return True
-    
-    try:
-        return _RUST_FFI.powerinfer_destroy_model(model_handle)
-    except Exception as e:
-        print(f"Error in powerinfer_destroy_model: {e}")
-        return False
+    return get_powerinfer_library() is not None
 
 
-def powerinfer_is_loaded(model_handle: str) -> bool:
-    """
-    Mock implementation for checking if model is loaded.
-    
-    Args:
-        model_handle: Handle to model to check
-        
-    Returns:
-        True if loaded, False otherwise
-    """
-    if not _HAS_RUST_FFI:
-        return True  # Mock always loaded
-    
-    try:
-        return _RUST_FFI.powerinfer_is_loaded(model_handle)
-    except Exception as e:
-        print(f"Error in powerinfer_is_loaded: {e}")
-        return False
-
-
-# For testing purposes
-if __name__ == "__main__":
-    print("PowerInfer FFI module loaded")
-    print(f"Rust FFI available: {_HAS_RUST_FFI}")
-    
-    if _HAS_RUST_FFI:
-        print("Rust FFI module loaded successfully")
-    else:
-        print("Using mock implementations")
+# Export functions
+__all__ = ["load_powerinfer_library", "get_powerinfer_library", "is_powerinfer_available"]
