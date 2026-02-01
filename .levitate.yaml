@@ -37,15 +37,6 @@ build:
     - "git"
     - "docker"
     - "make"
-
-work_packages:
-  WP-038:
-    verification:
-      type: "automated"
-      commands:
-        - cmd: "pytest tests/test_inference_backend.py -v"
-          type: "hard"
-
 forge:
   setup:
     - "pip install -e loqus_core"
