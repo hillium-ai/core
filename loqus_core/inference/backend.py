@@ -241,13 +241,23 @@ class PowerInferBackend(InferenceBackend):
     def __init__(self):
         self._model_handle = None
         self._is_loaded = False
-        # Import the Rust FFI module
+        # Import the PowerInfer FFI module
         try:
-            import pyo3_powerinfer
-            self._ffi_module = pyo3_powerinfer
+            from .powerinfer_ffi import (
+                powerinfer_load_model,
+                powerinfer_generate,
+                powerinfer_destroy_model,
+                powerinfer_is_loaded,
+                is_powerinfer_available
+            )
+            self._load_model_func = powerinfer_load_model
+            self._generate_func = powerinfer_generate
+            self._destroy_model_func = powerinfer_destroy_model
+            self._is_loaded_func = powerinfer_is_loaded
+            self._is_available = is_powerinfer_available()
         except ImportError:
-            logger.warning("pyo3_powerinfer module not found, using mock mode")
-            self._ffi_module = None
+            logger.warning("PowerInfer FFI module not found, using mock mode")
+            self._is_available = False
     
     def load_model(self, path: str, config: Dict[str, Any]) -> None:
         """
@@ -260,7 +270,7 @@ class PowerInferBackend(InferenceBackend):
         Raises:
             RuntimeError: If loading fails
         """
-        if self._ffi_module is None:
+        if not self._is_available:
             logger.warning("PowerInfer backend not available - using mock mode")
             # In mock mode, we just set the state
             self._is_loaded = True
@@ -276,8 +286,8 @@ class PowerInferBackend(InferenceBackend):
             raise ValueError("Model path cannot be empty")
         
         try:
-            # Call the Rust FFI function to load model
-            model_handle = self._ffi_module.powerinfer_load_model(path, config)
+            # Call the PowerInfer FFI function to load model
+            model_handle = self._load_model_func(path, config)
             
             if model_handle is None:
                 raise RuntimeError("Failed to load model via PowerInfer backend")
@@ -315,7 +325,7 @@ class PowerInferBackend(InferenceBackend):
         if not prompt:
             logger.warning("Empty prompt provided")
             
-        if self._ffi_module is None:
+        if not self._is_available:
             # Mock mode - return dummy result
             logger.info("Using mock mode for generation")
             return GenerateResult(
@@ -336,8 +346,8 @@ class PowerInferBackend(InferenceBackend):
                 "seed": params.seed
             }
             
-            # Call the Rust FFI function to generate
-            result_json = self._ffi_module.powerinfer_generate(self._model_handle, prompt, params_dict)
+            # Call the PowerInfer FFI function to generate
+            result_json = self._generate_func(self._model_handle, prompt, params_dict)
             
             if result_json is None:
                 raise RuntimeError("Generation failed via PowerInfer backend")
@@ -361,9 +371,9 @@ class PowerInferBackend(InferenceBackend):
         """
         Unload model and release resources.
         """
-        if self._model_handle is not None and self._ffi_module is not None:
+        if self._model_handle is not None and self._is_available:
             try:
-                self._ffi_module.powerinfer_destroy_model(self._model_handle)
+                self._destroy_model_func(self._model_handle)
                 self._model_handle = None
                 self._is_loaded = False
                 logger.info("PowerInfer model unloaded")
@@ -380,7 +390,7 @@ class PowerInferBackend(InferenceBackend):
         """
         Check if model is currently loaded.
         """
-        if self._ffi_module is None:
+        if not self._is_available:
             # Mock mode - rely on internal flag
             return self._is_loaded
 
@@ -388,7 +398,7 @@ class PowerInferBackend(InferenceBackend):
             return False
 
         try:
-            return self._ffi_module.powerinfer_is_loaded(self._model_handle)
+            return self._is_loaded_func(self._model_handle)
         except Exception:
             return False
 
