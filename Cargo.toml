@@ -4,12 +4,14 @@ members = [
     "crates/aegis_core",
     "crates/associative_core",
     "crates/consolidation",
+    "crates/hillium_backend",
     "crates/hillium_hal",
+    "crates/powerinfer-rs",
+    "crates/powerinfer_ffi",
+    "crates/powerinfer_ffi_new",
     "crates/working_memory",
     "hipposerver",
-    "crates/hillium_backend",
     "motor_cortex",
-    "crates/powerinfer-rs",
 ]
 
 [workspace.package]

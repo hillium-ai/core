@@ -1,6 +1,3 @@
-# Native Model Manager for LoqusCore
-# Manages lifecycle of LLMs using llama-cpp-python
-
 import os
 import time
 import threading
@@ -37,7 +34,7 @@ class ModelConfig:
         self.n_ctx = n_ctx
 
 class NativeModelManager:
-    """Manages native LLM inference using llama-cpp-python"""
+    """Manages native LLM inference using llama-cpp-python"
     
     def __init__(self, backend_type: str = "llama.cpp"):
         self.backend_type = backend_type
