@@ -1,9 +1,9 @@
-""'''
+"""
 MELODI Memory Layer Implementation
 
 This module implements the MelodiCompressor class that adheres to the
 interface defined in WP-031 (Compression Interface).
-'''
+"""
 
 import numpy as np
 import torch
@@ -199,34 +199,3 @@ class MelodiCompressor:
         # For now, we'll estimate based on compressed size
         compressed = self.compress(original_activations)
         return compressed.nbytes
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-"""
-""
