@@ -1,8 +1,3 @@
-"""
-PowerInfer backend for HilliumOS.
+# PowerInfer backend implementation
 
-This module provides the Rust-based PowerInfer backend for efficient
-sparse inference on HilliumOS devices.
-"""
-
-__version__ = "0.1.0"
+# This file can be used to expose public API
