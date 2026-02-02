@@ -426,4 +426,8 @@ def get_backend(backend_type: str = "llama.cpp") -> InferenceBackend:
         logger.error(f"Unknown backend: {backend_type}")
         raise ValueError(f"Unknown backend: {backend_type}. Available: {list(backends.keys())}")
 
-    return backends[backend_type.lower()]()
+    return backends[backend_type.lower()]()"
+  }}
+}}
+```
+[LEVITATE_DONE_REASON=stop]
