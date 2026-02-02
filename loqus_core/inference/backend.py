@@ -243,21 +243,12 @@ class PowerInferBackend(InferenceBackend):
         self._is_loaded = False
         # Import the PowerInfer FFI module
         try:
-            from .powerinfer_ffi import (
-                powerinfer_load_model,
-                powerinfer_generate,
-                powerinfer_destroy_model,
-                powerinfer_is_loaded,
-                is_powerinfer_available
-            )
-            self._load_model_func = powerinfer_load_model
-            self._generate_func = powerinfer_generate
-            self._destroy_model_func = powerinfer_destroy_model
-            self._is_loaded_func = powerinfer_is_loaded
-            self._is_available = is_powerinfer_available()
+            from .powerinfer_backend.main import PowerInferBackend as PowerInferBackendImpl
+            self._backend_impl = PowerInferBackendImpl()
         except ImportError:
-            logger.warning("PowerInfer FFI module not found, using mock mode")
-            self._is_available = False
+            logger.warning("PowerInfer backend not available - using mock mode")
+            # Create a mock implementation
+            self._backend_impl = None
     
     def load_model(self, path: str, config: Dict[str, Any]) -> None:
         """
@@ -270,29 +261,14 @@ class PowerInferBackend(InferenceBackend):
         Raises:
             RuntimeError: If loading fails
         """
-        if not self._is_available:
+        if self._backend_impl is None:
             logger.warning("PowerInfer backend not available - using mock mode")
             # In mock mode, we just set the state
             self._is_loaded = True
             return
         
-        # Validate path
-        if not isinstance(path, str):
-            logger.error(f"Invalid path type: {type(path)}")
-            raise TypeError("Model path must be a string")
-        
-        if not path:
-            logger.error("Empty model path provided")
-            raise ValueError("Model path cannot be empty")
-        
         try:
-            # Call the PowerInfer FFI function to load model
-            model_handle = self._load_model_func(path, config)
-            
-            if model_handle is None:
-                raise RuntimeError("Failed to load model via PowerInfer backend")
-            
-            self._model_handle = model_handle
+            self._backend_impl.load_model(path, config)
             self._is_loaded = True
             logger.info(f"Loaded model using PowerInfer backend: {path}")
             
@@ -325,7 +301,7 @@ class PowerInferBackend(InferenceBackend):
         if not prompt:
             logger.warning("Empty prompt provided")
             
-        if not self._is_available:
+        if self._backend_impl is None:
             # Mock mode - return dummy result
             logger.info("Using mock mode for generation")
             return GenerateResult(
@@ -346,15 +322,8 @@ class PowerInferBackend(InferenceBackend):
                 "seed": params.seed
             }
             
-            # Call the PowerInfer FFI function to generate
-            result_json = self._generate_func(self._model_handle, prompt, params_dict)
-            
-            if result_json is None:
-                raise RuntimeError("Generation failed via PowerInfer backend")
-            
-            # Parse the JSON result
-            import json
-            result_data = json.loads(result_json)
+            # Call the PowerInfer backend implementation
+            result_data = self._backend_impl.generate(prompt, params_dict)
             
             return GenerateResult(
                 text=result_data["text"],
@@ -371,34 +340,28 @@ class PowerInferBackend(InferenceBackend):
         """
         Unload model and release resources.
         """
-        if self._model_handle is not None and self._is_available:
+        if self._backend_impl is not None:
             try:
-                self._destroy_model_func(self._model_handle)
-                self._model_handle = None
+                self._backend_impl.unload()
                 self._is_loaded = False
                 logger.info("PowerInfer model unloaded")
             except Exception as e:
                 logger.error(f"Error during model unload: {e}")
-                self._model_handle = None
                 self._is_loaded = False
                 raise RuntimeError(f"Error during model unload: {e}")
         else:
-            self._model_handle = None
             self._is_loaded = False
     
     def is_loaded(self) -> bool:
         """
         Check if model is currently loaded.
         """
-        if not self._is_available:
+        if self._backend_impl is None:
             # Mock mode - rely on internal flag
             return self._is_loaded
 
-        if self._model_handle is None:
-            return False
-
         try:
-            return self._is_loaded_func(self._model_handle)
+            return self._backend_impl.is_loaded()
         except Exception:
             return False
 
