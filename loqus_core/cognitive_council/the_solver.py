@@ -4,6 +4,7 @@
 import re
 import logging
 import time
+import ast
 from RestrictedPython import compile_restricted
 
 logger = logging.getLogger(__name__)
@@ -76,6 +77,9 @@ class TheSolver:
     def execute_in_sandbox(self, code):
         """Execute code in a secure sandbox using RestrictedPython"""
         try:
+            # First, try to parse the code to detect syntax errors
+            ast.parse(code)
+            
             # Compile the code with RestrictedPython
             compiled = compile_restricted(code, filename="<inline>", mode="exec")
             
@@ -141,33 +145,25 @@ class TheSolver:
             return f"Error: {str(e)}"
 
     def solve(self, query):
-        """Solve a query using the DSL generator and sandboxed execution with retry logic"""
-        for attempt in range(self.max_retries):
-            try:
-                # Validate query first
-                self._validate_query(query)
-            except ValueError:
-                return "Error: Invalid query"
-            
-            # Generate DSL
-            code = self.generate_dsl(query)
-            
-            # Execute in sandbox
-            result = self.execute_in_sandbox(code)
-            
-            # If we get a syntax error, we should retry
-            if isinstance(result, str) and result.startswith("Error: Syntax error"):
-                if attempt < self.max_retries - 1:  # Don't wait on the last attempt
-                    time.sleep(0.1)  # Brief delay before retry
-                    continue  # Retry
-                else:
-                    return result  # Return the error after max retries
-            
-            # If we get a valid result or non-syntax error, return it
-            return result
+        """Solve a query using the DSL generator and sandboxed execution"""
+        # Validate query first
+        try:
+            self._validate_query(query)
+        except ValueError:
+            return "Error: Invalid query"
         
-        # This should not be reached, but just in case
-        return "Error: Max retries exceeded"
+        # Generate DSL
+        code = self.generate_dsl(query)
+        
+        # Execute in sandbox
+        result = self.execute_in_sandbox(code)
+        
+        # If we get a syntax error, we should return it
+        if isinstance(result, str) and result.startswith("Error: Syntax error"):
+            return result  # Return the error message directly
+        
+        # If we get a valid result, return it
+        return result
 
     def get_capabilities(self):
         """Return the capabilities of this solver"""

@@ -1,43 +1,40 @@
 import torch
 import torch.nn as nn
-from typing import Dict, Any, Optional
+import torch.nn.functional as F
 
 
 class RerooterNetwork(nn.Module):
-    """
-    Kinetic Planning Stack implementation for motor control.
-    This module implements the rerooter network that processes motor commands
-    and generates kinematic planning for robotic movement.
-    """
-    
-    def __init__(self, config: Dict[str, Any]):
-        super().__init__()
-        self.config = config
+    def __init__(self, map_size=32, hidden_dim=128):
+        super(RerooterNetwork, self).__init__()
         
-        # Define the network layers for kinetic planning
-        self.input_layer = nn.Linear(config.get('input_size', 128), config.get('hidden_size', 256))
+        # Define the network layers
+        self.map_size = map_size
+        self.hidden_dim = hidden_dim
+        
+        # Input layer
+        self.input_layer = nn.Linear(2 + 2 + map_size * map_size, hidden_dim)
+        
+        # Hidden layers
         self.hidden_layers = nn.ModuleList([
-            nn.Linear(config.get('hidden_size', 256), config.get('hidden_size', 256))
-            for _ in range(config.get('num_layers', 3))
+            nn.Linear(hidden_dim, hidden_dim)
+            for _ in range(2)  # 2 hidden layers
         ])
-        self.output_layer = nn.Linear(config.get('hidden_size', 256), config.get('output_size', 64))
+        
+        # Output layers
+        self.policy_logits = nn.Linear(hidden_dim, 8)  # 8-connected grid steps
+        self.value = nn.Linear(hidden_dim, 1)
         
         # Activation function
         self.activation = nn.ReLU()
         
         # Dropout for regularization
-        self.dropout = nn.Dropout(config.get('dropout_rate', 0.2))
+        self.dropout = nn.Dropout(0.2)
         
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass through the rerooter network.
+    def forward(self, start, goal, local_map):
+        # Concatenate inputs
+        x = torch.cat([start, goal, local_map.view(local_map.size(0), -1)], dim=1)
         
-        Args:
-            x: Input tensor of shape (batch_size, input_size)
-            
-        Returns:
-            Output tensor of shape (batch_size, output_size)
-        """
+        # Forward pass through network
         x = self.activation(self.input_layer(x))
         x = self.dropout(x)
         
@@ -45,36 +42,23 @@ class RerooterNetwork(nn.Module):
             x = self.activation(layer(x))
             x = self.dropout(x)
         
-        output = self.output_layer(x)
-        return output
+        # Output
+        policy_logits = self.policy_logits(x)
+        value = self.value(x)
+        
+        return policy_logits, value
     
-    def forward_scriptable(self, x: torch.Tensor) -> torch.Tensor:
+    def forward_scriptable(self, start, goal, local_map):
         """
         Forward pass optimized for scripting.
         
         Args:
-            x: Input tensor of shape (batch_size, input_size)
+            start: Start position tensor of shape (batch_size, 2)
+            goal: Goal position tensor of shape (batch_size, 2)
+            local_map: Local map tensor of shape (batch_size, 1, map_size, map_size)
             
         Returns:
-            Output tensor of shape (batch_size, output_size)
+            Tuple of (policy_logits, value) tensors
         """
         # This method is designed to be compatible with TorchScript
-        return self.forward(x)
-    
-    def get_config(self) -> Dict[str, Any]:
-        """
-        Get the configuration of the network.
-        
-        Returns:
-            Dictionary containing the network configuration
-        """
-        return self.config
-    
-    def set_config(self, config: Dict[str, Any]) -> None:
-        """
-        Set the configuration of the network.
-        
-        Args:
-            config: Dictionary containing the new network configuration
-        """
-        self.config = config
+        return self.forward(start, goal, local_map)

@@ -17,5 +17,35 @@ COUNCIL = {
     "solver": TheSolver(),
 }
 
+class CognitiveCouncil:
+    """
+    Cognitive Council - A collection of specialized agents that work together
+    to solve complex problems through reasoning, analysis, evaluation, and synthesis.
+    """
+    
+    def __init__(self):
+        self.roles = ROLES
+        self.solver = TheSolver()
+        
+    def get_role(self, role_name):
+        """
+        Get a specific role from the council
+        """
+        if role_name in self.roles:
+            return role_name
+        return None
+        
+    def get_solver(self):
+        """
+        Get the solver component of the council
+        """
+        return self.solver
+        
+    def get_all_roles(self):
+        """
+        Get all roles in the council
+        """
+        return self.roles
+
 # Export the main components
-__all__ = ["TheSolver", "ROLES", "COUNCIL"]
+__all__ = ["TheSolver", "ROLES", "COUNCIL", "CognitiveCouncil"]
