@@ -1,80 +1,82 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from typing import Tuple, Optional
 
 
 class RerooterNetwork(nn.Module):
-    def __init__(self, map_size=32, hidden_dim=128):
-        super(RerooterNetwork, self).__init__()
-        
-        # Define the network layers
+    """
+    RerooterNetwork implements the policy network for √LTS planning.
+    
+    Input:
+        start: [x, y] (normalized coordinates)
+        goal: [x, y] (normalized coordinates)
+        local_map: Tensor (Grid around robot)
+    
+    Output:
+        policy_logits: Action probabilities (8-connected grid steps)
+        value: Estimated steps-to-goal
+    """
+    
+    def __init__(self, map_size: int = 32, hidden_dim: int = 128):
+        super().__init__()
         self.map_size = map_size
         self.hidden_dim = hidden_dim
         
-        # Input layer
-        self.input_layer = nn.Linear(2 + 2 + map_size * map_size, hidden_dim)
+        # MLP for processing the combined features
+        self.mlp = nn.Sequential(
+            nn.Linear(2 + 2 + map_size * map_size, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 2, 8 + 1)  # 8 actions + 1 value
+        )
         
-        # Hidden layers
-        self.hidden_layers = nn.ModuleList([
-            nn.Linear(hidden_dim, hidden_dim)
-            for _ in range(2)  # 2 hidden layers
-        ])
+        # Separate policy and value outputs
+        self.policy_head = nn.Linear(8 + 1, 8)  # 8 actions
+        self.value_head = nn.Linear(8 + 1, 1)   # 1 value
         
-        # Output layers
-        self.policy_logits = nn.Linear(hidden_dim, 8)  # 8-connected grid steps
-        self.value = nn.Linear(hidden_dim, 1)
-        
-        # Activation function
-        self.activation = nn.ReLU()
-        
-        # Dropout for regularization
-        self.dropout = nn.Dropout(0.2)
-        
-    def forward(self, start, goal, local_map):
-        # Concatenate inputs
-        x = torch.cat([start, goal, local_map.view(local_map.size(0), -1)], dim=1)
-        
-        # Forward pass through network
-        x = self.activation(self.input_layer(x))
-        x = self.dropout(x)
-        
-        for layer in self.hidden_layers:
-            x = self.activation(layer(x))
-            x = self.dropout(x)
-        
-        # Output
-        policy_logits = self.policy_logits(x)
-        value = self.value(x)
-        
-        return policy_logits, value
-    
-    def forward_scriptable(self, start, goal, local_map):
+    def forward(self, start: torch.Tensor, goal: torch.Tensor, local_map: torch.Tensor):
         """
-        Forward pass optimized for scripting.
+        Forward pass through the rerooter network.
         
         Args:
-            start: Start position tensor of shape (batch_size, 2)
-            goal: Goal position tensor of shape (batch_size, 2)
-            local_map: Local map tensor of shape (batch_size, 1, map_size, map_size)
+            start: Tensor of shape (batch_size, 2) representing start positions
+            goal: Tensor of shape (batch_size, 2) representing goal positions
+            local_map: Tensor of shape (batch_size, 1, map_size, map_size) representing local map
             
         Returns:
-            Tuple of (policy_logits, value) tensors
+            policy_logits: Tensor of shape (batch_size, 8) representing action logits
+            value: Tensor of shape (batch_size, 1) representing value estimate
         """
-        # This method is designed to be compatible with TorchScript
+        # Flatten the local map
+        flat_map = local_map.view(local_map.size(0), -1)
+        
+        # Concatenate all inputs
+        x = torch.cat([start, goal, flat_map], dim=1)
+        
+        # Process through MLP
+        combined = self.mlp(x)
+        
+        # Split into policy and value
+        policy_logits = self.policy_head(combined)
+        value = self.value_head(combined)
+        
+        return policy_logits, value
+
+    def forward_scriptable(self, start: torch.Tensor, goal: torch.Tensor, local_map: torch.Tensor):
+        """
+        Forward pass that can be used with TorchScript
+        """
         return self.forward(start, goal, local_map)
 
-    def export_to_torchscript(self, path):
-        """
-        Export the network to TorchScript format
-        """
+    def export_to_torchscript(self, path: str):
+        """Export the model to TorchScript"""
         # Create dummy inputs for tracing
-        batch_size = 1
-        start = torch.randn(batch_size, 2)
-        goal = torch.randn(batch_size, 2)
-        local_map = torch.randn(batch_size, 1, self.map_size, self.map_size)
+        dummy_start = torch.randn(1, 2)
+        dummy_goal = torch.randn(1, 2)
+        dummy_local_map = torch.randn(1, 1, self.map_size, self.map_size)
         
-        # Export to TorchScript
-        scripted_network = torch.jit.script(self)
-        scripted_network.save(path)
-        
-        return scripted_network
+        # Trace the model
+        traced = torch.jit.trace(self, (dummy_start, dummy_goal, dummy_local_map))
+        torch.jit.save(traced, path)
+        return traced
