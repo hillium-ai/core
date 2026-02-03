@@ -7,8 +7,6 @@ members = [
     "crates/hillium_backend",
     "crates/hillium_hal",
     "crates/powerinfer-rs",
-    "crates/powerinfer_ffi",
-    "crates/powerinfer_ffi_new",
     "crates/working_memory",
     "hipposerver",
     "motor_cortex",

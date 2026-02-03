@@ -243,7 +243,7 @@ class PowerInferBackend(InferenceBackend):
         self._is_loaded = False
         # Import the PowerInfer FFI module
         try:
-            from .powerinfer_backend.main import PowerInferBackend as PowerInferBackendImpl
+            from .powerinfer_backend import PowerInferBackend as PowerInferBackendImpl
             self._backend_impl = PowerInferBackendImpl()
         except ImportError:
             logger.warning("PowerInfer backend not available - using mock mode")
