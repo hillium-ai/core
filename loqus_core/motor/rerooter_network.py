@@ -62,3 +62,19 @@ class RerooterNetwork(nn.Module):
         """
         # This method is designed to be compatible with TorchScript
         return self.forward(start, goal, local_map)
+
+    def export_to_torchscript(self, path):
+        """
+        Export the network to TorchScript format
+        """
+        # Create dummy inputs for tracing
+        batch_size = 1
+        start = torch.randn(batch_size, 2)
+        goal = torch.randn(batch_size, 2)
+        local_map = torch.randn(batch_size, 1, self.map_size, self.map_size)
+        
+        # Export to TorchScript
+        scripted_network = torch.jit.script(self)
+        scripted_network.save(path)
+        
+        return scripted_network

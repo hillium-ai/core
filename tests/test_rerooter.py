@@ -36,8 +36,20 @@ def test_rerooter_network():
     print("RerooterNetwork test passed!")
     
     # Export to TorchScript
-    scripted_network = torch.jit.script(network)
-    print("TorchScript export successful!")
+    try:
+        scripted_network = torch.jit.script(network)
+        print("TorchScript export successful!")
+    except Exception as e:
+        print(f"TorchScript export failed: {e}")
+        raise
+    
+    # Test export functionality
+    try:
+        network.export_to_torchscript("test_rerooter_export.pt")
+        print("Network export to TorchScript successful!")
+    except Exception as e:
+        print(f"Network export failed: {e}")
+        raise
     
 if __name__ == "__main__":
     test_rerooter_network()

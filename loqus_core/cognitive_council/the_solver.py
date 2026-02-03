@@ -5,6 +5,7 @@ import re
 import logging
 import time
 import ast
+import math
 from RestrictedPython import compile_restricted
 
 logger = logging.getLogger(__name__)
@@ -158,11 +159,7 @@ class TheSolver:
         # Execute in sandbox
         result = self.execute_in_sandbox(code)
         
-        # If we get a syntax error, we should return it
-        if isinstance(result, str) and result.startswith("Error: Syntax error"):
-            return result  # Return the error message directly
-        
-        # If we get a valid result, return it
+        # Return result (this will be the error message if there was a syntax error)
         return result
 
     def get_capabilities(self):
