@@ -45,7 +45,7 @@ def test_rerooter_network():
     
     # Test export functionality
     try:
-        network.export_to_torchscript("test_rerooter_export.pt")
+        network.export_to_torchscript("rerooter.pt")
         print("Network export to TorchScript successful!")
     except Exception as e:
         print(f"Network export failed: {e}")
