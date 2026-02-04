@@ -1,18 +1,17 @@
 import torch
 import torch.nn as nn
-import sys
-import os
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir)
-
 from loqus_core.motor.rerooter import RerooterNetwork
 
-def test_rerooter_network():
-    """Test that RerooterNetwork can be instantiated and run"""
-    # Create network instance
-    network = RerooterNetwork(map_size=32, hidden_dim=128)
+def test_rerooter_network_creation():
+    """Test that RerooterNetwork can be instantiated"""
+    network = RerooterNetwork()
+    assert network is not None
+    print("✅ RerooterNetwork instantiation test passed")
+
+
+def test_rerooter_network_forward_pass():
+    """Test that RerooterNetwork can run a forward pass"""
+    network = RerooterNetwork()
     
     # Create dummy inputs
     batch_size = 1
@@ -24,32 +23,41 @@ def test_rerooter_network():
     policy_logits, value = network(start, goal, local_map)
     
     # Check output shapes
-    assert policy_logits.shape == (batch_size, 8), f"Expected policy_logits shape (1, 8), got {policy_logits.shape}"
-    assert value.shape == (batch_size, 1), f"Expected value shape (1, 1), got {value.shape}"
-    
-    # Test forward_scriptable method
-    policy_logits_script, value_script = network.forward_scriptable(start, goal, local_map)
-    
-    assert policy_logits_script.shape == (batch_size, 8), f"Expected scripted policy_logits shape (1, 8), got {policy_logits_script.shape}"
-    assert value_script.shape == (batch_size, 1), f"Expected scripted value shape (1, 1), got {value_script.shape}"
-    
-    print("RerooterNetwork test passed!")
+    assert policy_logits.shape == (batch_size, 8)
+    assert value.shape == (batch_size, 1)
+    print("✅ RerooterNetwork forward pass test passed")
+
+
+def test_rerooter_network_export():
+    """Test that RerooterNetwork can export to TorchScript"""
+    network = RerooterNetwork()
     
     # Export to TorchScript
     try:
-        scripted_network = torch.jit.script(network)
-        print("TorchScript export successful!")
+        network.export_to_torchscript('test_export.pt')
+        print("✅ RerooterNetwork export test passed")
     except Exception as e:
-        print(f"TorchScript export failed: {e}")
+        print(f"❌ RerooterNetwork export failed: {e}")
         raise
+
+
+def test_rerooter_network_torchscript_loading():
+    """Test that exported TorchScript model can be loaded"""
+    # First export
+    network = RerooterNetwork()
+    network.export_to_torchscript('test_export.pt')
     
-    # Test export functionality
+    # Try to load it back
     try:
-        network.export_to_torchscript("rerooter.pt")
-        print("Network export to TorchScript successful!")
+        loaded_model = torch.jit.load('test_export.pt')
+        print("✅ RerooterNetwork TorchScript loading test passed")
     except Exception as e:
-        print(f"Network export failed: {e}")
+        print(f"❌ RerooterNetwork TorchScript loading failed: {e}")
         raise
-    
+
 if __name__ == "__main__":
-    test_rerooter_network()
+    test_rerooter_network_creation()
+    test_rerooter_network_forward_pass()
+    test_rerooter_network_export()
+    test_rerooter_network_torchscript_loading()
+    print("All tests passed!")

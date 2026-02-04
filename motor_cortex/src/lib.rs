@@ -23,7 +23,7 @@ impl RootLTSPlanner {
     pub fn plan(&self, start: &[f32], goal: &[f32]) -> Result<Tensor, tch::Error> {
         // Validate input lengths
         if start.len() != 2 {
-            return Err(tch::Error::from("Start coordinates must have exactly 2 elements"));
+            return Err(tch::Error::from(\"Start coordinates must have exactly 2 elements"));
         }
         if goal.len() != 2 {
             return Err(tch::Error::from("Goal coordinates must have exactly 2 elements"));
