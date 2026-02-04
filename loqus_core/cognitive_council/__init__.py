@@ -1,6 +1,8 @@
 # Cognitive Council - Main Entry Point
 
 from .the_solver import TheSolver
+from .alignment_monitor import CollectiveAlignmentMonitor
+from .alignment_monitor import CollectiveAlignmentMonitor
 
 # Define the roles in the Cognitive Council
 ROLES = [
@@ -26,6 +28,7 @@ class CognitiveCouncil:
     def __init__(self):
         self.roles = ROLES
         self.solver = TheSolver()
+        self.alignment_monitor = CollectiveAlignmentMonitor()
         
     def get_role(self, role_name):
         """
