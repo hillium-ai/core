@@ -7,7 +7,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 
-from loqus_core.motor.rerooter_network import RerooterNetwork
+from loqus_core.motor.rerooter import RerooterNetwork
 
 def test_rerooter_network():
     """Test that RerooterNetwork can be instantiated and run"""

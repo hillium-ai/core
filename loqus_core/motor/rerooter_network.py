@@ -22,9 +22,13 @@ class RerooterNetwork(nn.Module):
         self.map_size = map_size
         self.hidden_dim = hidden_dim
         
+        # Store the expected input size for validation
+        self.expected_input_size = 2 + 2 + map_size * map_size
+        
         # MLP for processing the combined features
+        # We'll make this work with variable input sizes by using a flexible approach
         self.mlp = nn.Sequential(
-            nn.Linear(2 + 2 + map_size * map_size, hidden_dim),
+            nn.Linear(self.expected_input_size, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
