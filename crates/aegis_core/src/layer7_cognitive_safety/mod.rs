@@ -13,7 +13,7 @@ use crate::visual::validator::DetectionThresholds;
 /// When the `visual-validation` feature is enabled, this module integrates with
 /// the CognitiveSafetyValidator to provide visual content validation capabilities.
 
-#[cfg(feature = "visual-validation")]
+#[cfg(feature = \
 use rest_rav_detector::ReStraVDetector;
 
 #[cfg(not(feature = "visual-validation"))]

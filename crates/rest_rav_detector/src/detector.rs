@@ -13,9 +13,8 @@ pub struct Image {
 /// Detection thresholds for the visual validator
 #[derive(Debug, Clone)]
 pub struct DetectionThresholds {
-    pub curvature_threshold: f32,
-    pub stepwise_distance_threshold: f32,
-    pub confidence_threshold: f32,
+    pub min_confidence: f64,
+    pub max_false_positive_rate: f64,
 }
 
 /// Statistics for the validator
@@ -30,11 +29,12 @@ pub struct ValidatorStats {
 /// Result of synthetic detection
 #[derive(Debug, Clone)]
 pub struct SyntheticDetectionResult {
-    pub is_synthetic: bool,
-    pub curvature_score: f32,
-    pub stepwise_distance: f32,
-    pub confidence: f32,
-    pub frame_anomalies: Vec<usize>,
+    /// Whether the content is approved or not
+    pub approved: bool,
+    /// Confidence score of the detection
+    pub confidence: f64,
+    /// Detected synthetic content type
+    pub content_type: String,
 }
 
 /// Trait for visual validation
@@ -42,11 +42,11 @@ pub trait VisualValidator {
     /// Analyzes batch of frames for synthetic content
     fn analyze(&mut self, frames: &[Image]) -> SyntheticDetectionResult;
     
-    /// Configures detection thresholds
+    /// Set detection thresholds
     fn set_thresholds(&mut self, thresholds: DetectionThresholds);
     
-    /// Gets statistics about usage
-    fn get_stats(&self) -> ValidatorStats;
+    /// Check if visual validation is enabled
+    fn is_enabled(&self) -> bool;
 }
 
 /// ReStraV Detector implementation
@@ -60,9 +60,8 @@ impl ReStraVDetector {
     pub fn new() -> Self {
         Self {
             thresholds: DetectionThresholds {
-                curvature_threshold: 0.5,
-                stepwise_distance_threshold: 0.3,
-                confidence_threshold: 0.8,
+                min_confidence: 0.8,
+                max_false_positive_rate: 0.03,
             },
             stats: ValidatorStats {
                 total_analyzed: 0,
@@ -90,69 +89,24 @@ impl VisualValidator for ReStraVDetector {
         let confidence = 0.9; // Mock value
         
         // Simulate some frame anomalies
-        let frame_anomalies = if curvature_score > self.thresholds.curvature_threshold {
+        let frame_anomalies = if curvature_score > self.thresholds.min_confidence {
             vec![0, 2, 4] // Mock anomalies
         } else {
             vec![]
         };
         
-        let is_synthetic = curvature_score > self.thresholds.curvature_threshold && 
-                          confidence > self.thresholds.confidence_threshold;
+        let approved = curvature_score <= self.thresholds.min_confidence && 
+                          confidence > self.thresholds.min_confidence;
         
         // Update stats
         self.stats.total_analyzed += frames.len() as u64;
-        if is_synthetic {
+        if !approved {
             self.stats.synthetic_detected += 1;
         }
         self.stats.avg_curvature_score = curvature_score;
         self.stats.avg_stepwise_distance = stepwise_distance;
         
         SyntheticDetectionResult {
-            is_synthetic,
-            curvature_score,
-            stepwise_distance,
+            approved,
             confidence,
-            frame_anomalies,
-        }
-    }
-    
-    fn set_thresholds(&mut self, thresholds: DetectionThresholds) {
-        self.thresholds = thresholds;
-    }
-    
-    fn get_stats(&self) -> ValidatorStats {
-        self.stats.clone()
-    }
-}
-
-/// No-op validator for testing
-pub struct NoOpValidator {}
-
-impl NoOpValidator {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-impl VisualValidator for NoOpValidator {
-    fn analyze(&mut self, _frames: &[Image]) -> SyntheticDetectionResult {
-        SyntheticDetectionResult {
-            is_synthetic: false,
-            curvature_score: 0.0,
-            stepwise_distance: 0.0,
-            confidence: 1.0,
-            frame_anomalies: vec![],
-        }
-    }
-    
-    fn set_thresholds(&mut self, _thresholds: DetectionThresholds) {}
-    
-    fn get_stats(&self) -> ValidatorStats {
-        ValidatorStats {
-            total_analyzed: 0,
-            synthetic_detected: 0,
-            avg_curvature_score: 0.0,
-            avg_stepwise_distance: 0.0,
-        }
-    }
-}
+            content_type: \
