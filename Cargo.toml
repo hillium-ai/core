@@ -9,6 +9,7 @@ members = [
     "crates/powerinfer-rs",
     "crates/powerinfer_ffi",
     "crates/powerinfer_ffi_new",
+    "crates/rest_rav_detector",
     "crates/working_memory",
     "hipposerver",
     "motor_cortex",

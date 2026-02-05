@@ -1,0 +1,10 @@
+[package]
+name = "rest_rav_detector"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+image = { version = "0.24", optional = true }
+
+[features]
+visual-validation = ["image"]
