@@ -13,8 +13,9 @@ pub struct Image {
 /// Detection thresholds for the visual validator
 #[derive(Debug, Clone)]
 pub struct DetectionThresholds {
-    pub min_confidence: f64,
-    pub max_false_positive_rate: f64,
+    pub curvature_threshold: f32,
+    pub distance_threshold: f32,
+    pub confidence_threshold: f32,
 }
 
 /// Statistics for the validator
@@ -22,19 +23,23 @@ pub struct DetectionThresholds {
 pub struct ValidatorStats {
     pub total_analyzed: u64,
     pub synthetic_detected: u64,
-    pub avg_curvature_score: f32,
-    pub avg_stepwise_distance: f32,
+    pub average_curvature: f32,
+    pub average_distance: f32,
 }
 
 /// Result of synthetic detection
 #[derive(Debug, Clone)]
 pub struct SyntheticDetectionResult {
-    /// Whether the content is approved or not
-    pub approved: bool,
+    /// Whether the content is synthetic or not
+    pub is_synthetic: bool,
+    /// Curvature score of the detection
+    pub curvature_score: f32,
+    /// Stepwise distance score
+    pub stepwise_distance: f32,
     /// Confidence score of the detection
-    pub confidence: f64,
-    /// Detected synthetic content type
-    pub content_type: String,
+    pub confidence: f32,
+    /// Detected frame anomalies
+    pub frame_anomalies: Vec<usize>,
 }
 
 /// Trait for visual validation
@@ -45,14 +50,15 @@ pub trait VisualValidator {
     /// Set detection thresholds
     fn set_thresholds(&mut self, thresholds: DetectionThresholds);
     
-    /// Check if visual validation is enabled
-    fn is_enabled(&self) -> bool;
+    /// Gets validator statistics
+    fn get_stats(&self) -> ValidatorStats;
 }
 
 /// ReStraV Detector implementation
 pub struct ReStraVDetector {
     thresholds: DetectionThresholds,
     stats: ValidatorStats,
+    model_loaded: bool,
 }
 
 impl ReStraVDetector {
@@ -60,53 +66,86 @@ impl ReStraVDetector {
     pub fn new() -> Self {
         Self {
             thresholds: DetectionThresholds {
-                min_confidence: 0.8,
-                max_false_positive_rate: 0.03,
+                curvature_threshold: 0.5,
+                distance_threshold: 0.3,
+                confidence_threshold: 0.8,
             },
             stats: ValidatorStats {
                 total_analyzed: 0,
                 synthetic_detected: 0,
-                avg_curvature_score: 0.0,
-                avg_stepwise_distance: 0.0,
+                average_curvature: 0.0,
+                average_distance: 0.0,
             },
+            model_loaded: false,
         }
     }
-}
 
-impl Default for ReStraVDetector {
-    fn default() -> Self {
-        Self::new()
+    /// Loads the DINOv2 model for inference
+    pub fn load_model(&mut self) -> Result<(), String> {
+        // In a real implementation, this would load the ONNX model
+        // For now, we'll simulate loading
+        self.model_loaded = true;
+        Ok(())
     }
 }
 
 impl VisualValidator for ReStraVDetector {
+    /// Analyzes batch of frames for synthetic content
     fn analyze(&mut self, frames: &[Image]) -> SyntheticDetectionResult {
-        // In a real implementation, this would use DINOv2 ONNX backend
-        // For now, we'll simulate detection with mock logic
+        // In a real implementation, this would run DINOv2 inference
+        // For now, we'll simulate the analysis
         
-        let curvature_score = 0.45; // Mock value
-        let stepwise_distance = 0.25; // Mock value
-        let confidence = 0.9; // Mock value
+        let mut curvature_score = 0.0f32;
+        let mut distance_score = 0.0f32;
+        let mut anomalies = Vec::new();
         
-        // Simulate some frame anomalies
-        let frame_anomalies = if curvature_score > self.thresholds.min_confidence {
-            vec![0, 2, 4] // Mock anomalies
-        } else {
-            vec![]
-        };
+        // Simulate processing each frame
+        for (i, _frame) in frames.iter().enumerate() {
+            // Simulate some curvature analysis
+            let frame_curvature = (i as f32 * 0.05).min(1.0);
+            curvature_score += frame_curvature;
+            
+            // Simulate some distance analysis
+            let frame_distance = (i as f32 * 0.03).min(1.0);
+            distance_score += frame_distance;
+            
+            // Simulate anomaly detection
+            if frame_curvature > 0.7 {
+                anomalies.push(i);
+            }
+        }
         
-        let approved = curvature_score <= self.thresholds.min_confidence && 
-                          confidence > self.thresholds.min_confidence;
+        curvature_score /= frames.len() as f32;
+        distance_score /= frames.len() as f32;
+        
+        let confidence = 1.0 - (curvature_score + distance_score) / 2.0;
+        let is_synthetic = curvature_score > self.thresholds.curvature_threshold || 
+                          distance_score > self.thresholds.distance_threshold;
         
         // Update stats
         self.stats.total_analyzed += frames.len() as u64;
-        if !approved {
+        if is_synthetic {
             self.stats.synthetic_detected += 1;
         }
-        self.stats.avg_curvature_score = curvature_score;
-        self.stats.avg_stepwise_distance = stepwise_distance;
+        self.stats.average_curvature = curvature_score;
+        self.stats.average_distance = distance_score;
         
         SyntheticDetectionResult {
-            approved,
+            is_synthetic,
+            curvature_score,
+            stepwise_distance: distance_score,
             confidence,
-            content_type: \
+            frame_anomalies: anomalies,
+        }
+    }
+    
+    /// Set detection thresholds
+    fn set_thresholds(&mut self, thresholds: DetectionThresholds) {
+        self.thresholds = thresholds;
+    }
+    
+    /// Gets validator statistics
+    fn get_stats(&self) -> ValidatorStats {
+        self.stats.clone()
+    }
+}
