@@ -1,5 +1,4 @@
-//! ReStraV Visual Validator
-//!
+// ReStraV Visual Validator Implementation
 //! Implements visual validation to detect AI-generated content (deepfakes, synthetic video)
 //! using perceptual straightening techniques.
 

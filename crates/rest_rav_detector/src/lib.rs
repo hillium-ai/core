@@ -19,7 +19,7 @@ pub struct SyntheticDetectionResult {
 #[derive(Debug, Clone, Default)]
 pub struct DetectionThresholds {
     pub curvature_threshold: f32,
-    pub distance_threshold: f32,
+    pub stepwise_distance_threshold: f32,
     pub confidence_threshold: f32,
 }
 
@@ -60,7 +60,7 @@ impl ReStraVDetector {
         Self {
             thresholds: DetectionThresholds {
                 curvature_threshold: 0.5,
-                distance_threshold: 0.3,
+                stepwise_distance_threshold: 0.3,
                 confidence_threshold: 0.8,
             },
             stats: ValidatorStats {

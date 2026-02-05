@@ -4,9 +4,7 @@ use crate::layer7::validation::ValidationResult;
 use crate::layer7::validation::SyntheticInputDetected;
 
 // Import the ReStraV detector
-#[cfg(feature = "visual-validation")]
-use rest_rav_detector::ReStraVDetector;
-#[cfg(feature = "visual-validation")]
+#[cfg(feature = \
 use rest_rav_detector::VisualValidator;
 use image::Image;
 
