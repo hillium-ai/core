@@ -12,3 +12,4 @@ rest_rav_detector = { path = "../rest_rav_detector", optional = true }
 
 [features]
 visual-validation = ["rest_rav_detector"]
+
