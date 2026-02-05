@@ -1,4 +1,4 @@
-// ReStraV Detector for AI-generated video detection
+// ReStraV Detector Implementation for AI-generated video detection
 //
 // This crate implements the VisualValidator trait for detecting
 // synthetic content in visual inputs using curvature analysis.
@@ -42,16 +42,12 @@ pub trait VisualValidator {
     
     /// Gets validator statistics
     fn get_stats(&self) -> ValidatorStats;
-    
-    /// Checks if the validator is enabled
-    fn is_enabled(&self) -> bool;
 }
 
 /// ReStraV Detector implementation
 pub struct ReStraVDetector {
     thresholds: DetectionThresholds,
     stats: ValidatorStats,
-    enabled: bool,
 }
 
 impl ReStraVDetector {
@@ -69,7 +65,6 @@ impl ReStraVDetector {
                 avg_curvature: 0.0,
                 avg_distance: 0.0,
             },
-            enabled: true,
         }
     }
     
@@ -169,9 +164,5 @@ impl VisualValidator for ReStraVDetector {
     
     fn get_stats(&self) -> ValidatorStats {
         self.stats.clone()
-    }
-    
-    fn is_enabled(&self) -> bool {
-        self.enabled
     }
 }

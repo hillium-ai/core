@@ -4,14 +4,7 @@ use crate::layer7::validation::ValidationResult;
 use crate::layer7::validation::SyntheticInputDetected;
 
 // Import the ReStraV detector
-#[cfg(feature = "visual-validation")]
-use rest_rav_detector::ReStraVDetector;
-use rest_rav_detector::VisualValidator;
-use image::Image;
-
-/// Cognitive Safety Validator implementation
-pub struct CognitiveSafetyValidator {
-    #[cfg(feature = "visual-validation")]
+#[cfg(feature = \
     visual_validator: Option<ReStraVDetector>,
 }
 

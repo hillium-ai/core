@@ -1,0 +1,10 @@
+[package]
+name = "restrav_validator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+image = { version = "0.24", optional = true }
+
+[features]
+visual-validation = ["image"]

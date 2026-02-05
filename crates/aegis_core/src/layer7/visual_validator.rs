@@ -1,8 +1,8 @@
 //! Visual Validator Interface for Aegis Core
 
-// Re-export the types and trait from rest_rav_detector
-pub use rest_rav_detector::VisualValidator;
-pub use rest_rav_detector::ReStraVDetector;
-pub use rest_rav_detector::SyntheticDetectionResult;
-pub use rest_rav_detector::DetectionThresholds;
-pub use rest_rav_detector::ValidatorStats;
+// Re-export the types and trait from restrav_validator
+pub use restrav_validator::VisualValidator;
+pub use restrav_validator::ReStraVDetector;
+pub use restrav_validator::SyntheticDetectionResult;
+pub use restrav_validator::DetectionThresholds;
+pub use restrav_validator::ValidatorStats;
