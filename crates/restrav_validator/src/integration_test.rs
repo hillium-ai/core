@@ -7,7 +7,7 @@ mod tests {
     #[test]
     fn test_restrav_detector_creation() {
         let detector = ReStraVDetector::new();
-        assert!(detector.stats.total_frames == 0);
+        assert_eq!(detector.stats.total_analyzed, 0);
     }
     
     #[test]
@@ -24,6 +24,6 @@ mod tests {
         let thresholds = DetectionThresholds::default();
         detector.set_thresholds(thresholds);
         let stats = detector.get_stats();
-        assert!(stats.total_frames == 0);
+        assert_eq!(stats.total_analyzed, 0);
     }
 }

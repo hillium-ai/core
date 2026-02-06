@@ -3,8 +3,13 @@
 //! This module provides the visual validation interface for detecting synthetic content
 //! in visual inputs such as images and video frames.
 
-pub mod validator;
-pub use validator::ReStraVDetector;
+pub use restav_detector::ReStraVDetector;
+
+#[cfg(feature = "visual-validation")]
+pub use restav_detector::ReStraVDetector;
+
+#[cfg(not(feature = "visual-validation"))]
+pub use restav_detector::MockReStraVDetector;
 #[cfg(test)]
 mod tests;
 
