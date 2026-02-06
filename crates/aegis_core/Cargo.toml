@@ -8,8 +8,8 @@ hipposerver = { path = "../../hipposerver" }
 log.workspace = true
 anyhow.workspace = true
 serde = { version = "1.0", features = ["derive"] }
-restrav_validator = { path = "../restrav_validator", optional = true }
+restrav_detector = { path = "../restrav_detector", optional = true }
 
 [features]
-visual-validation = ["restrav_validator"]
+visual-validation = ["restrav_detector"]
 

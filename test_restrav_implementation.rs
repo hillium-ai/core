@@ -1,9 +1,9 @@
-use restav_detector::VisualValidator;
-use restav_detector::ReStraVDetector;
-use restav_detector::MockReStraVDetector;
+use restrav_detector::VisualValidator;
+use restrav_detector::ReStraVDetector;
+// MockReStraVDetector is not implemented yet, using real one for now
 
 fn main() {
     println!("ReStraV detector implementation test");
-    let detector = MockReStraVDetector::new();
-    println!("Mock detector created successfully");
+    let detector = ReStraVDetector::new();
+    println!("Detector created successfully");
 }

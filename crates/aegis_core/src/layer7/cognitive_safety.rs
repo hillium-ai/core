@@ -2,24 +2,13 @@
 
 use crate::layer7::validation::ValidationResult;
 use crate::layer7::validation::SyntheticInputDetected;
+use crate::layer7::visual_validator::Image;
+use restrav_detector::ReStraVDetector;
+use restrav_detector::VisualValidator;
 
-// Import the ReStraV detector
-use crate::visual::validator::VisualValidator;
-use crate::visual::validator::Image;
-
-/// Cognitive Safety Validator implementation
+/// Cognitive Safety Validator for Aegis Layer 7
 pub struct CognitiveSafetyValidator {
-    #[cfg(feature = "visual-validation")]
-    visual_validator: Option<ReStraVDetector>,
-}
-
-impl CognitiveSafetyValidator {
-    /// Creates a new CognitiveSafetyValidator
-    pub fn new() -> Self {
-        Self {
-            #[cfg(feature = "visual-validation")]
-            visual_validator: Some(ReStraVDetector::new()),
-            #[cfg(not(feature = "visual-validation"))]
+    #[cfg(feature = \
             visual_validator: None,
         }
     }

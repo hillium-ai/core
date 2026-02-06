@@ -1,4 +1,4 @@
-use restrav_validator::{ReStraVDetector, VisualValidator, SyntheticDetectionResult};
+use restrav_detector::{ReStraVDetector, VisualValidator, SyntheticDetectionResult};
 
 fn main() {
     let detector = ReStraVDetector::new();
