@@ -2,7 +2,7 @@
 
 import unittest
 from unittest.mock import Mock
-from crates.rest_rav_detector import ReStraVDetector
+from crates.restrav_validator import ReStraVDetector
 from crates.aegis_core.layer7.cognitive_safety import CognitiveSafetyValidator
 
 class TestReStraVIntegration(unittest.TestCase):
