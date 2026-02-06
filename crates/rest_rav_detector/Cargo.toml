@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-onnxruntime = "1.16"
-image = "0.24"
+onnxruntime = { version = "0.0.14", optional = true }
+image = { version = "0.24", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 
 [features]
