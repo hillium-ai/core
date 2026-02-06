@@ -2,7 +2,7 @@
 
 use crate::validation::ValidationResult;
 use crate::values::Image;
-use rest_rav_detector::{VisualValidator, ReStraVDetector};
+use restrav_validator::{VisualValidator, ReStraVDetector};
 
 /// Cognitive Safety Validator that integrates ReStraV
 pub struct CognitiveSafetyValidator {
@@ -21,19 +21,12 @@ impl CognitiveSafetyValidator {
     pub fn validate_visual_input(&mut self, frames: &[Image]) -> ValidationResult {
         #[cfg(feature = "visual-validation")]
         if let Some(detector) = &mut self.visual_validator {
-            match detector.analyze(frames) {
-                Ok(result) => {
-                    if result.is_synthetic && result.confidence > 0.8 {
-                        return ValidationResult::Rejected { 
-                            reason: "Synthetic input detected",
-                            evidence: "ReStraV validation failed",
-                        };
-                    }
-                }
-                Err(_) => {
-                    // If analysis fails, we default to allowing the input
-                    // This prevents false positives from breaking the system
-                }
+            let result = detector.analyze(frames);
+            if result.is_synthetic && result.confidence > 0.8 {
+                return ValidationResult::Rejected { 
+                    reason: "Synthetic input detected",
+                    evidence: "ReStraV validation failed",
+                };
             }
         }
         ValidationResult::Approved

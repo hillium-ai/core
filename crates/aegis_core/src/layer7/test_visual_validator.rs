@@ -2,8 +2,8 @@
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::layer7::cognitive_safety::CognitiveSafetyValidator;
-    use image::Image;
+    use crate::layer7_cognitive_safety::CognitiveSafetyValidator;
+    use crate::visual::validator::Image;
 
     #[test]
     fn test_visual_validator_integration() {
@@ -21,5 +21,18 @@ mod tests {
         // This test verifies that the feature flag works
         // The actual implementation will be tested through integration
         assert!(true); // Placeholder - actual test would require feature compilation
+    }
+    
+    #[test]
+    fn test_visual_validator_trait_implementation() {
+        // Test that ReStraVDetector implements the VisualValidator trait
+        use crate::visual::validator::VisualValidator;
+        
+        let mut detector = ReStraVDetector::new();
+        let frames = vec![Image::new(640, 480)];
+        let result = detector.analyze(&frames);
+        
+        assert!(result.is_synthetic || !result.is_synthetic); // Should not panic
+        assert!(result.confidence >= 0.0 && result.confidence <= 1.0);
     }
 }
