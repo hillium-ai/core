@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-onnxruntime = { version = "0.9", optional = true }
+[dependencies]
+onnxruntime = { version = "0.0.14", optional = true }
 image = { version = "0.24", optional = true }
 
 [features]
-default = []
-onnxruntime = ["dep:onnxruntime", "dep:image"]
+visual-validation = ["dep:onnxruntime", "dep:image"]
