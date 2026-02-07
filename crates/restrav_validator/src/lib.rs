@@ -4,100 +4,6 @@
 
 use pyo3::prelude::*;
 
-/// Result of synthetic content detection
-#[derive(Debug, Clone, pyo3::PyClass)]
-#[pyo3(name = "SyntheticDetectionResult")]
-pub struct PySyntheticDetectionResult {
-    /// Whether the input is detected as synthetic
-    pub is_synthetic: bool,
-    /// Curvature score from perceptual straightening
-    pub curvature_score: f32,
-    /// Stepwise distance measure
-    pub stepwise_distance: f32,
-    /// Confidence level of the detection
-    pub confidence: f32,
-    /// Indices of frames that are anomalous
-    pub frame_anomalies: Vec<usize>,
-}
-
-impl From<SyntheticDetectionResult> for PySyntheticDetectionResult {
-    fn from(result: SyntheticDetectionResult) -> Self {
-        Self {
-            is_synthetic: result.is_synthetic,
-            curvature_score: result.curvature_score,
-            stepwise_distance: result.stepwise_distance,
-            confidence: result.confidence,
-            frame_anomalies: result.frame_anomalies,
-        }
-    }
-}
-
-impl From<PySyntheticDetectionResult> for SyntheticDetectionResult {
-    fn from(py_result: PySyntheticDetectionResult) -> Self {
-        Self {
-            is_synthetic: py_result.is_synthetic,
-            curvature_score: py_result.curvature_score,
-            stepwise_distance: py_result.stepwise_distance,
-            confidence: py_result.confidence,
-            frame_anomalies: py_result.frame_anomalies,
-        }
-    }
-}
-
-/// Thresholds for detection
-#[derive(Debug, Clone, Copy, pyo3::PyClass)]
-#[pyo3(name = "DetectionThresholds")]
-pub struct PyDetectionThresholds {
-    /// Minimum confidence to consider input as synthetic
-    pub min_confidence: f32,
-    /// Threshold for curvature score
-    pub curvature_threshold: f32,
-    /// Threshold for stepwise distance
-    pub distance_threshold: f32,
-}
-
-impl Default for PyDetectionThresholds {
-    fn default() -> Self {
-        Self {
-            min_confidence: 0.8,
-            curvature_threshold: 0.5,
-            distance_threshold: 0.3,
-        }
-    }
-}
-
-impl From<DetectionThresholds> for PyDetectionThresholds {
-    fn from(thresholds: DetectionThresholds) -> Self {
-        Self {
-            min_confidence: thresholds.min_confidence,
-            curvature_threshold: thresholds.curvature_threshold,
-            distance_threshold: thresholds.distance_threshold,
-        }
-    }
-}
-
-impl From<PyDetectionThresholds> for DetectionThresholds {
-    fn from(py_thresholds: PyDetectionThresholds) -> Self {
-        Self {
-            min_confidence: py_thresholds.min_confidence,
-            curvature_threshold: py_thresholds.curvature_threshold,
-            distance_threshold: py_thresholds.distance_threshold,
-        }
-    }
-}
-
-/// Trait defining the visual validator interface
-pub trait VisualValidator {
-    /// Analyzes a batch of frames for synthetic content detection
-    fn analyze(&mut self, frames: &[Image]) -> SyntheticDetectionResult;
-    
-    /// Sets detection thresholds
-    fn set_thresholds(&mut self, thresholds: DetectionThresholds);
-    
-    /// Gets validator statistics
-    fn get_stats(&self) -> ValidatorStats;
-}
-
 /// Represents an image frame
 #[derive(Debug, Clone, pyo3::PyClass)]
 #[pyo3(name = "Image")]
@@ -167,7 +73,7 @@ impl From<PySyntheticDetectionResult> for SyntheticDetectionResult {
 }
 
 /// Detection thresholds configuration
-#[derive(Debug, Clone, pyo3::PyClass)]
+#[derive(Debug, Clone, Copy, pyo3::PyClass)]
 #[pyo3(name = "DetectionThresholds")]
 pub struct PyDetectionThresholds {
     pub min_confidence: f32,
@@ -244,49 +150,6 @@ impl From<PyValidatorStats> for ValidatorStats {
     }
 }
 
-/// ReStraV Detector implementation
-#[pyclass]
-pub struct ReStraVDetector {
-    inner: crate::ReStraVDetector,
-}
-
-#[pymethods]
-impl ReStraVDetector {
-    #[new]
-    pub fn new() -> Self {
-        Self {
-            inner: crate::ReStraVDetector::new(),
-        }
-    }
-
-    /// Analyzes frames for synthetic content
-    pub fn analyze(&mut self, frames: Vec<PyImage>) -> PySyntheticDetectionResult {
-        let image_frames: Vec<Image> = frames.into_iter().map(|f| f.into()).collect();
-        let result = self.inner.analyze(&image_frames);
-        result.into()
-    }
-
-    /// Sets detection thresholds
-    pub fn set_thresholds(&mut self, thresholds: PyDetectionThresholds) {
-        self.inner.set_thresholds(thresholds.into());
-    }
-
-    /// Gets validator statistics
-    pub fn get_stats(&self) -> PyValidatorStats {
-        self.inner.get_stats().into()
-    }
-}
-
-/// Module initialization
-#[pymodule]
-fn restrav_validator(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<ReStraVDetector>()?;
-    m.add_class::<PySyntheticDetectionResult>()?;
-    m.add_class::<PyDetectionThresholds>()?;
-    m.add_class::<PyImage>()?;
-    m.add_class::<PyValidatorStats>()?;(())
-}
-
 /// Trait defining the visual validator interface
 pub trait VisualValidator {
     /// Analyzes a batch of frames for synthetic content detection
@@ -347,6 +210,50 @@ pub struct ValidatorStats {
     pub total_frames: usize,
     pub synthetic_detections: usize,
     pub avg_processing_time_ms: f64,
+}
+
+/// ReStraV Detector implementation
+#[pyclass]
+pub struct ReStraVDetector {
+    inner: crate::ReStraVDetector,
+}
+
+#[pymethods]
+impl ReStraVDetector {
+    #[new]
+    pub fn new() -> Self {
+        Self {
+            inner: crate::ReStraVDetector::new(),
+        }
+    }
+
+    /// Analyzes frames for synthetic content
+    pub fn analyze(&mut self, frames: Vec<PyImage>) -> PySyntheticDetectionResult {
+        let image_frames: Vec<Image> = frames.into_iter().map(|f| f.into()).collect();
+        let result = self.inner.analyze(&image_frames);
+        result.into()
+    }
+
+    /// Sets detection thresholds
+    pub fn set_thresholds(&mut self, thresholds: PyDetectionThresholds) {
+        self.inner.set_thresholds(thresholds.into());
+    }
+
+    /// Gets validator statistics
+    pub fn get_stats(&self) -> PyValidatorStats {
+        self.inner.get_stats().into()
+    }
+}
+
+/// Module initialization
+#[pymodule]
+fn restrav_validator(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_class::<ReStraVDetector>()?;
+    m.add_class::<PySyntheticDetectionResult>()?;
+    m.add_class::<PyDetectionThresholds>()?;
+    m.add_class::<PyImage>()?;
+    m.add_class::<PyValidatorStats>()?;
+(())
 }
 
 /// ReStraV Detector implementation
