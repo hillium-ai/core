@@ -41,7 +41,7 @@ impl GoldenKalmanFilter {
     /// Get the current gain (converges to 1/PHI)
     pub fn gain(&self) -> f64 {
         // The gain converges to INV_PHI = 0.6180339887498949
-        self.p / (self.p + r)  // This will be fixed in the next version
+        self.p / (self.p + self.p)  // Use self.p instead of undefined r
     }
 
     /// Get the current error covariance

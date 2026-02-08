@@ -290,7 +290,7 @@ impl<T: Ord + Clone> FibonacciHeap<T> {
             // While there's another node with the same degree
             while let Some(y) = degree_array[d] {
                 // Make sure x is the smaller key
-                if self.nodes[x].key > self.nodes[y].key {
+                if self.nodes[x].key > self.nodes[y].key { // Type annotation needed for comparison
                     std::mem::swap(&mut x, &mut y);
                 }
                 
