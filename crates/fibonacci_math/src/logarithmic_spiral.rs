@@ -1,88 +1,102 @@
-// Logarithmic Spiral trajectory generator for HilliumOS
+// Logarithmic Spiral implementation for Rust
 
-//! A logarithmic spiral is a curve that often appears in nature.
-//! It is defined by the equation: r = a * e^(b * θ)
-//! where r is the distance from the origin, θ is the angle, and a, b are constants.
+use std::f64;
 
-/// Logarithmic Spiral generator
+/// Logarithmic Spiral trajectory generator
+#[derive(Debug, Clone)]
 pub struct LogarithmicSpiral {
-    /// The growth rate parameter
-    pub a: f64,
-    /// The spiral tightness parameter
-    pub b: f64,
+    /// Spiral scaling factor
+    a: f64,
+    /// Spiral tightness (related to golden ratio)
+    b: f64,
+    /// Spiral center point
+    center: (f64, f64),
 }
 
 impl LogarithmicSpiral {
-    /// Create a new logarithmic spiral with given parameters
-    pub fn new(a: f64, b: f64) -> Self {
-        LogarithmicSpiral { a, b }
+    /// Creates a new logarithmic spiral with given parameters
+    pub fn new(a: f64, b: f64, center: (f64, f64)) -> Self {
+        LogarithmicSpiral { a, b, center }
     }
 
-    /// Generate a point on the spiral at angle θ
-    pub fn point_at_angle(&self, theta: f64) -> (f64, f64) {
-        let r = self.a * (self.b * theta).exp();
-        (r * theta.cos(), r * theta.sin())
+    /// Generates a point along the spiral at angle theta
+    pub fn point_at(&self, theta: f64) -> (f64, f64) {
+        let r = self.a * f64::exp(self.b * theta);
+        let x = r * f64::cos(theta) + self.center.0;
+        let y = r * f64::sin(theta) + self.center.1;
+        (x, y)
     }
 
-    /// Generate multiple points along the spiral
-    pub fn generate_points(&self, start_theta: f64, end_theta: f64, num_points: usize) -> Vec<(f64, f64)> {
-        let mut points = Vec::with_capacity(num_points);
-        let step = (end_theta - start_theta) / (num_points - 1) as f64;
+    /// Calculates the arc length from theta_start to theta_end
+    pub fn arc_length(&self, theta_start: f64, theta_end: f64) -> f64 {
+        let numerator = f64::sqrt(self.b * self.b + 1.0) * self.a * (f64::exp(self.b * theta_end) - f64::exp(self.b * theta_start));
+        numerator / self.b
+    }
+
+    /// Generates a trajectory segment with specified resolution
+    pub fn trajectory(&self, theta_start: f64, theta_end: f64, resolution: usize) -> Vec<(f64, f64)> {
+        let mut points = Vec::with_capacity(resolution);
+        let step = (theta_end - theta_start) / (resolution as f64 - 1.0);
         
-        for i in 0..num_points {
-            let theta = start_theta + i as f64 * step;
-            points.push(self.point_at_angle(theta));
+        for i in 0..resolution {
+            let theta = theta_start + (i as f64) * step;
+            points.push(self.point_at(theta));
         }
         
         points
     }
 
-    /// Generate 3D points along the spiral
-    pub fn generate_3d_points(&self, start_theta: f64, end_theta: f64, num_points: usize, z_offset: f64) -> Vec<(f64, f64, f64)> {
-        let mut points = Vec::with_capacity(num_points);
-        let step = (end_theta - start_theta) / (num_points - 1) as f64;
-        
-        for i in 0..num_points {
-            let theta = start_theta + i as f64 * step;
-            let (x, y) = self.point_at_angle(theta);
-            points.push((x, y, z_offset + theta * 0.1)); // Simple z progression
-        }
-        
-        points
+    /// Gets the spiral scaling factor
+    pub fn a(&self) -> f64 {
+        self.a
     }
+
+    /// Gets the spiral tightness
+    pub fn b(&self) -> f64 {
+        self.b
+    }
+
+    /// Gets the spiral center
+    pub fn center(&self) -> (f64, f64) {
+        self.center
+    }
+}
+
+/// Golden ratio related constants
+pub const PHI: f64 = 1.618033988749895;
+pub const INV_PHI: f64 = 0.6180339887498949; // 1/PHI = PHI - 1
+pub const SQRT_5: f64 = 2.23606797749979;
+
+/// Golden spiral with parameters based on the golden ratio
+pub fn golden_spiral(center: (f64, f64)) -> LogarithmicSpiral {
+    // For golden spiral, b = 1/phi
+    LogarithmicSpiral::new(1.0, INV_PHI, center)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
-    fn test_logarithmic_spiral_creation() {
-        let spiral = LogarithmicSpiral::new(1.0, 0.1);
-        assert_eq!(spiral.a, 1.0);
-        assert_eq!(spiral.b, 0.1);
+    fn test_spiral_creation() {
+        let spiral = LogarithmicSpiral::new(1.0, 0.1, (0.0, 0.0));
+        assert_eq!(spiral.a(), 1.0);
+        assert_eq!(spiral.b(), 0.1);
+        assert_eq!(spiral.center(), (0.0, 0.0));
     }
-    
+
     #[test]
-    fn test_spiral_point_generation() {
-        let spiral = LogarithmicSpiral::new(1.0, 0.1);
-        let (x, y) = spiral.point_at_angle(0.0);
-        assert_eq!(x, 1.0);
-        assert_eq!(y, 0.0);
+    fn test_point_at() {
+        let spiral = LogarithmicSpiral::new(1.0, 0.0, (0.0, 0.0)); // Circle
+        let point = spiral.point_at(0.0);
+        assert_eq!(point.0, 1.0);
+        assert_eq!(point.1, 0.0);
     }
-    
+
     #[test]
-    fn test_spiral_multiple_points() {
-        let spiral = LogarithmicSpiral::new(1.0, 0.1);
-        let points = spiral.generate_points(0.0, 1.0, 5);
-        assert_eq!(points.len(), 5);
-    }
-    
-    #[test]
-    fn test_3d_spiral_generation() {
-        let spiral = LogarithmicSpiral::new(1.0, 0.1);
-        let points = spiral.generate_3d_points(0.0, 1.0, 3, 0.5);
-        assert_eq!(points.len(), 3);
-        assert_eq!(points[0].2, 0.5); // Check z offset
+    fn test_golden_spiral() {
+        let spiral = golden_spiral((0.0, 0.0));
+        assert_eq!(spiral.a(), 1.0);
+        assert!((spiral.b() - INV_PHI).abs() < 1e-10);
     }
 }
