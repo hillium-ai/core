@@ -4,6 +4,7 @@ members = [
     "crates/aegis_core",
     "crates/associative_core",
     "crates/consolidation",
+    "crates/fibonacci_math",
     "crates/hillium_backend",
     "crates/hillium_hal",
     "crates/powerinfer-rs",

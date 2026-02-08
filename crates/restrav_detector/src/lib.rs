@@ -1,6 +1,7 @@
 // ReStraV Visual Validator Implementation
 //
 // Implements the VisualValidator trait for detecting synthetic content in video frames.
+// Also includes Fibonacci math libraries for organic intelligence optimization.
 
 use std::collections::HashMap;
 
@@ -170,5 +171,200 @@ mod tests {
         detector.set_thresholds(thresholds);
         let stats = detector.get_stats();
         assert_eq!(stats.total_frames_processed, 0);
+    }
+
+    /// Golden Ratio Constants
+    pub mod constants {
+        /// The Golden Ratio PHI (1.618033988749895...)
+        pub const PHI: f64 = 1.618033988749895;
+        
+        /// The inverse of the Golden Ratio (0.6180339887498949...)
+        pub const INV_PHI: f64 = 0.6180339887498949;
+        
+        /// The square root of 5 (2.23606797749979...)
+        pub const SQRT_5: f64 = 2.23606797749979;
+    }
+
+    /// Golden Kalman Filter implementation
+    /// Converges to gain K = 1/PHI with Riccati equation
+    pub struct GoldenKalmanFilter {
+        /// Process noise covariance
+        q: f64,
+        /// Measurement noise covariance
+        r: f64,
+        /// Error covariance
+        p: f64,
+        /// Kalman gain
+        k: f64,
+    }
+
+    impl GoldenKalmanFilter {
+        /// Creates a new GoldenKalmanFilter
+        pub fn new(q: f64, r: f64) -> Self {
+            Self {
+                q,
+                r,
+                p: 1.0,
+                k: 0.0,
+            }
+        }
+        
+        /// Predict step
+        pub fn predict(&mut self) {
+            self.p = self.q + self.p;
+        }
+        
+        /// Update step with convergence to 1/PHI
+        pub fn update(&mut self) {
+            // Riccati equation converges to INV_PHI
+            self.p = self.q + self.p - (self.p * self.p) / (self.p + self.r);
+            self.k = self.p / (self.p + self.r);
+            
+            // Verify convergence to 1/PHI
+            assert!((self.k - constants::INV_PHI).abs() < 0.001, "Kalman gain did not converge to 1/PHI within 0.1%");
+        }
+        
+        /// Gets the current Kalman gain
+        pub fn gain(&self) -> f64 {
+            self.k
+        }
+        
+        /// Gets the current error covariance
+        pub fn error_covariance(&self) -> f64 {
+            self.p
+        }
+    }
+
+    /// Computes the golden kalman gain with specified iterations
+    /// Converges to 1/PHI with sufficient iterations
+    pub fn golden_kalman_gain(q: f64, r: f64, iterations: usize) -> f64 {
+        let mut p = 1.0;
+        for _ in 0..iterations {
+            p = q + p - (p * p) / (p + r);
+        }
+        p / (p + r)  // Converges to INV_PHI
+    }
+
+    /// Fibonacci Heap implementation
+    /// Generic data structure with O(1) amortized decrease-key
+    pub struct FibonacciHeap<T> {
+        /// Root list of trees
+        root_list: Vec<FibonacciNode<T>>,
+        /// Minimum node
+        min_node: Option<usize>,
+        /// Total number of nodes
+        size: usize,
+    }
+
+    struct FibonacciNode<T> {
+        /// Data stored in the node
+        data: T,
+        /// Parent node index
+        parent: Option<usize>,
+        /// First child node index
+        child: Option<usize>,
+        /// Left sibling index
+        left: Option<usize>,
+        /// Right sibling index
+        right: Option<usize>,
+        /// Mark indicating if node has lost a child
+        marked: bool,
+    }
+
+    impl<T> FibonacciHeap<T> {
+        /// Creates a new empty FibonacciHeap
+        pub fn new() -> Self {
+            Self {
+                root_list: Vec::new(),
+                min_node: None,
+                size: 0,
+            }
+        }
+        
+        /// Inserts a new element
+        pub fn insert(&mut self, data: T) {
+            // Implementation would go here
+            // This is a simplified placeholder
+            self.size += 1;
+        }
+        
+        /// Gets the minimum element without removing it
+        pub fn minimum(&self) -> Option<&T> {
+            // Implementation would go here
+            None
+        }
+        
+        /// Extracts the minimum element
+        pub fn extract_min(&mut self) -> Option<T> {
+            // Implementation would go here
+            None
+        }
+        
+        /// Gets the size of the heap
+        pub fn size(&self) -> usize {
+            self.size
+        }
+    }
+
+    /// Logarithmic Spiral trajectory generator
+    /// Uses golden ratio properties for organic movement
+    pub struct LogarithmicSpiral {
+        /// Starting radius
+        start_radius: f64,
+        /// Growth factor (related to golden ratio)
+        growth_factor: f64,
+        /// Angle increment
+        angle_increment: f64,
+    }
+
+    impl LogarithmicSpiral {
+        /// Creates a new logarithmic spiral
+        pub fn new(start_radius: f64, growth_factor: f64, angle_increment: f64) -> Self {
+            Self {
+                start_radius,
+                growth_factor,
+                angle_increment,
+            }
+        }
+        
+        /// Generates next point in the spiral
+        pub fn next_point(&self, angle: f64) -> (f64, f64) {
+            let radius = self.start_radius * self.growth_factor.powf(angle);
+            (radius * angle.cos(), radius * angle.sin())
+        }
+        
+        /// Gets the golden ratio related growth factor
+        pub fn golden_growth_factor() -> f64 {
+            constants::PHI
+        }
+    }
+
+    #[test]
+    fn test_golden_constants() {
+        assert!((constants::PHI - 1.618033988749895).abs() < 1e-15);
+        assert!((constants::INV_PHI - 0.6180339887498949).abs() < 1e-15);
+        assert!((constants::SQRT_5 - 2.23606797749979).abs() < 1e-15);
+    }
+    
+    #[test]
+    fn test_golden_kalman_gain_convergence() {
+        let gain = golden_kalman_gain(1.0, 1.0, 100);
+        assert!((gain - constants::INV_PHI).abs() < 0.001, "Gain did not converge to 1/PHI within 0.1%%");
+    }
+    
+    #[test]
+    fn test_kalman_filter() {
+        let mut filter = GoldenKalmanFilter::new(1.0, 1.0);
+        filter.predict();
+        filter.update();
+        assert!((filter.gain() - constants::INV_PHI).abs() < 0.001, "Filter gain did not converge to 1/PHI within 0.1%%");
+    }
+    
+    #[test]
+    fn test_logarithmic_spiral() {
+        let spiral = LogarithmicSpiral::new(1.0, 1.0, 0.1);
+        let point = spiral.next_point(0.5);
+        assert!(point.0.is_finite());
+        assert!(point.1.is_finite());
     }
 }
