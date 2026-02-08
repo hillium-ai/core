@@ -2,19 +2,26 @@
 
 use crate::layer7::validation::ValidationResult;
 use crate::layer7::validation::SyntheticInputDetected;
-use crate::visual::Image;
-use crate::visual::VisualValidator;
-use crate::visual::ReStraVDetector;
+use crate::layer7::visual_validator::VisualValidator;
+use crate::layer7::visual_validator::ReStraVDetector;
+use crate::layer7::visual_validator::Image;
 
 /// Cognitive Safety Validator for Aegis Layer 7
 pub struct CognitiveSafetyValidator {
-    #[cfg(feature = \
-        if let Some(detector) = &mut self.visual_validator {
-            let result = detector.analyze(frames);
-            if result.is_synthetic && result.confidence > 0.8 {
-                return ValidationResult::Rejected { 
-                    reason: SyntheticInputDetected,
-                    evidence: "Synthetic input detected by ReStraV detector".to_string()
+    visual_validator: Option<ReStraVDetector>,
+}
+
+impl CognitiveSafetyValidator {
+    /// Creates a new CognitiveSafetyValidator
+    pub fn new() -> Self {
+        Self {
+            visual_validator: None,
+        }
+    }
+    
+    /// Initializes the visual validator with feature flag check
+    pub fn init_visual_validator(&mut self) {
+        #[cfg(feature = \
                 };
             }
         }
