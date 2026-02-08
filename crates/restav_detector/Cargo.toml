@@ -3,10 +3,10 @@ name = "restav_detector"
 version = "0.1.0"
 edition = "2021"
 
+# ZOMBIE CRATE: This is a duplicate created by a model hallucination (WP-042 run).
+# The canonical crate is restrav_detector. This crate is excluded from workspace.
+
 [dependencies]
-[dependencies]
-onnxruntime = { version = "0.0.14", optional = true }
-image = { version = "0.24", optional = true }
 
 [features]
-visual-validation = ["dep:onnxruntime", "dep:image"]
+visual-validation = []

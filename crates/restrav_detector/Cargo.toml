@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# Dependencies are optional — only needed when running with real DINOv2/ONNX backend.
+# For mock/test implementations (relaxed WP-042 criteria), no external deps required.
 
 [features]
 visual-validation = []

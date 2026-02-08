@@ -27,7 +27,7 @@ impl Image {
 #[derive(Debug, Clone)]
 pub struct DetectionThresholds {
     pub curvature_threshold: f32,
-    pub distance_threshold: f32,
+    pub stepwise_threshold: f32,
     pub confidence_threshold: f32,
 }
 
@@ -35,7 +35,7 @@ impl Default for DetectionThresholds {
     fn default() -> Self {
         Self {
             curvature_threshold: 0.5,
-            distance_threshold: 0.3,
+            stepwise_threshold: 0.3,
             confidence_threshold: 0.8,
         }
     }
@@ -44,9 +44,10 @@ impl Default for DetectionThresholds {
 /// Statistics for the validator
 #[derive(Debug, Clone)]
 pub struct ValidatorStats {
-    pub total_analyzed: u64,
-    pub synthetic_detected: u64,
-    pub avg_processing_time_ms: f64,
+    pub total_frames_processed: u64,
+    pub synthetic_frames_detected: u64,
+    pub average_curvature_score: f32,
+    pub average_distance_score: f32,
 }
 
 /// Result of synthetic detection
@@ -85,9 +86,10 @@ impl ReStraVDetector {
         Self {
             thresholds: DetectionThresholds::default(),
             stats: ValidatorStats {
-                total_analyzed: 0,
-                synthetic_detected: 0,
-                avg_processing_time_ms: 0.0,
+                total_frames_processed: 0,
+                synthetic_frames_detected: 0,
+                average_curvature_score: 0.0,
+                average_distance_score: 0.0,
             },
             state: HashMap::new(),
         }
@@ -109,14 +111,14 @@ impl VisualValidator for ReStraVDetector {
         let confidence = 0.9; // Mock value
         
         let is_synthetic = curvature_score > self.thresholds.curvature_threshold 
-            || stepwise_distance > self.thresholds.distance_threshold;
+            || stepwise_distance > self.thresholds.stepwise_threshold;
         
         let frame_anomalies = Vec::new(); // Mock anomalies
         
         // Update stats
-        self.stats.total_analyzed += frames.len() as u64;
+        self.stats.total_frames_processed += frames.len() as u64;
         if is_synthetic {
-            self.stats.synthetic_detected += 1;
+            self.stats.synthetic_frames_detected += 1;
         }
         
         SyntheticDetectionResult {
@@ -146,8 +148,8 @@ mod tests {
     #[test]
     fn test_restrav_detector_creation() {
         let detector = ReStraVDetector::new();
-        assert_eq!(detector.stats.total_analyzed, 0);
-        assert_eq!(detector.stats.synthetic_detected, 0);
+        assert_eq!(detector.stats.total_frames_processed, 0);
+        assert_eq!(detector.stats.synthetic_frames_detected, 0);
     }
 
     #[test]
@@ -155,7 +157,10 @@ mod tests {
         let mut detector = ReStraVDetector::new();
         let image = Image::new(640, 480);
         let result = detector.analyze(&[image]);
-        assert!(result.is_synthetic == false || result.is_synthetic == true);
+        // Mock implementation: with default thresholds (0.5, 0.3),
+        // the mock values (0.25 curvature, 0.15 distance) should NOT trigger synthetic
+        assert_eq!(result.is_synthetic, false);
+        assert_eq!(result.curvature_score, 0.25);
     }
 
     #[test]
@@ -164,6 +169,6 @@ mod tests {
         let thresholds = DetectionThresholds::default();
         detector.set_thresholds(thresholds);
         let stats = detector.get_stats();
-        assert_eq!(stats.total_analyzed, 0);
+        assert_eq!(stats.total_frames_processed, 0);
     }
 }
