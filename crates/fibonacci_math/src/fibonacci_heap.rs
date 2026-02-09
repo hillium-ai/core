@@ -1,9 +1,6 @@
 //! Fibonacci Heap implementation
 
 use pyo3::prelude::*;
-//! Fibonacci Heap implementation
-
-use pyo3::prelude::*;
 
 /// Fibonacci Heap data structure
 #[pyclass]
