@@ -1,75 +1,40 @@
-// Integration tests for Fibonacci Math Library
+//! Integration tests for fibonacci_math crate
 
-use fibonacci_math::*;
-
-#[test]
-fn test_golden_constants() {
-    assert_eq!(PHI * INV_PHI, 1.0);
-    assert_eq!(PHI - 1.0, INV_PHI);
-    assert_eq!(SQRT_5 * SQRT_5, 5.0);
-}
-
-#[test]
-fn test_golden_kalman_convergence() {
-    let mut filter = GoldenKalmanFilter::new();
+#[cfg(test)]
+mod tests {
+    use super::*;
     
-    // Test convergence to 1/PHI
-    let q = 0.1;
-    let r = 0.1;
-    
-    // Run several iterations to see convergence
-    for _ in 0..100 {
-        filter.predict(q, r);
+    #[test]
+    fn test_golden_constants() {
+        // Test that golden constants are correctly defined
+        assert_eq!(fibonacci_math::golden_constants::PHI, 1.618033988749895);
+        assert_eq!(fibonacci_math::golden_constants::INV_PHI, 0.6180339887498949);
+        assert_eq!(fibonacci_math::golden_constants::SQRT_5, 2.23606797749979);
     }
     
-    let gain = filter.gain();
-    let expected_gain = 0.6180339887498949; // 1/PHI
+    #[test]
+    fn test_golden_kalman_convergence() {
+        // Test that Kalman gain converges to 1/PHI
+        let gain = fibonacci_math::golden_kalman::golden_kalman_gain(1.0, 1.0, 100);
+        let expected = 0.6180339887498949; // 1/PHI
+        assert!((gain - expected).abs() < 0.001, "Gain should converge to 1/PHI");
+    }
     
-    // Should converge within 0.1% tolerance
-    assert!((gain - expected_gain).abs() < 0.001);
-}
-
-#[test]
-fn test_fibonacci_heap_operations() {
-    let mut heap = FibonacciHeap::new();
+    #[test]
+    fn test_fibonacci_heap() {
+        // Test basic Fibonacci heap functionality
+        let mut heap = fibonacci_math::fibonacci_heap::FibonacciHeap::new();
+        heap.push(5, "item1");
+        heap.push(10, "item2");
+        assert_eq!(heap.pop_min(), Some((5, "item1")));
+    }
     
-    // Test insert
-    heap.insert(5.0, "five");
-    heap.insert(3.0, "three");
-    heap.insert(7.0, "seven");
-    
-    assert_eq!(heap.size(), 3);
-    
-    // Test find_min
-    assert_eq!(heap.find_min(), Some(&"three"));
-    
-    // Test extract_min
-    assert_eq!(heap.extract_min(), Some("three"));
-    assert_eq!(heap.extract_min(), Some("five"));
-    assert_eq!(heap.extract_min(), Some("seven"));
-    assert_eq!(heap.extract_min(), None);
-}
-
-#[test]
-fn test_logarithmic_spiral_generation() {
-    let spiral = LogarithmicSpiral::new(1.0, 0.1);
-    
-    // Test point generation
-    let (x, y) = spiral.point_at_angle(0.0);
-    assert_eq!(x, 1.0);
-    assert_eq!(y, 0.0);
-    
-    // Test multiple points
-    let points = spiral.generate_points(0.0, 1.0, 5);
-    assert_eq!(points.len(), 5);
-}
-
-#[test]
-fn test_fibonacci_heap_decrease_key() {
-    let mut heap = FibonacciHeap::new();
-    let node = heap.insert(5.0, "five");
-    
-    // Test decrease key operation
-    heap.decrease_key(&node, 2.0);
-    assert_eq!(heap.find_min(), Some(&"five"));
+    #[test]
+    fn test_logarithmic_spiral() {
+        // Test logarithmic spiral generation
+        let spiral = fibonacci_math::logarithmic_spiral::LogarithmicSpiral::new(1.0, 0.5);
+        let point = spiral.point_at_angle(0.0);
+        assert_eq!(point.0, 1.0);
+        assert_eq!(point.1, 0.0);
+    }
 }

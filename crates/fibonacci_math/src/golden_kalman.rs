@@ -1,59 +1,68 @@
-// Golden Kalman Filter implementation with convergence to 1/PHI gain.
+// Golden Kalman Filter implementation for Fibonacci Math Library
 
-//! Golden Kalman Filter implementation
-//!
-//! This implementation provides a Kalman filter that converges to the optimal
-//! gain of 1/φ (inverse golden ratio) as described in Benavoli et al. (2009).
-//! The filter uses the Riccati equation to achieve this convergence.
-
-/// Golden Kalman Filter implementation
+/// Golden Kalman Filter
 pub struct GoldenKalmanFilter {
-    /// The error covariance
+    /// State estimate
+    pub state: f64,
+    /// Error covariance
     pub p: f64,
+    /// Gain
+    pub gain: f64,
 }
 
 impl GoldenKalmanFilter {
-    /// Creates a new GoldenKalmanFilter
+    /// Creates a new Golden Kalman Filter
     pub fn new() -> Self {
-        GoldenKalmanFilter { p: 1.0 }
+        GoldenKalmanFilter {
+            state: 0.0,
+            p: 1.0,
+            gain: 0.0,
+        }
     }
 
-    /// Predict step using Fibonacci convergence
-    pub fn predict(&mut self, q: f64, r: f64) -> f64 {
-        // Update error covariance using Riccati equation
-        // This converges to 1/PHI (inverse golden ratio)
-        self.p = q + self.p - (self.p * self.p) / (self.p + r);
-        self.p
-    }
-
-    /// Update step with gain converging to 1/PHI
-    pub fn update(&mut self, measurement: f64, q: f64, r: f64) -> f64 {
-        // Calculate Kalman gain that converges to 1/PHI
-        let gain = self.p / (self.p + r);
+    /// Predict step
+    pub fn predict(&mut self, q: f64, r: f64) {
+        // Update error covariance
+        self.p = self.p + q;
+        
+        // Calculate gain (converges to 1/PHI)
+        self.gain = self.p / (self.p + r);
         
         // Update error covariance
-        self.p = (1.0 - gain) * self.p;
+        self.p = self.p - self.gain * self.p;
+    }
+
+    /// Update step
+    pub fn update(&mut self, measurement: f64, q: f64, r: f64) -> f64 {
+        // Predict step
+        self.predict(q, r);
         
-        // Return updated state estimate
-        measurement + gain * (measurement - self.p)
+        // Update state estimate
+        let innovation = measurement - self.state;
+        self.state = self.state + self.gain * innovation;
+        
+        self.state
     }
 
-    /// Get the current gain (converges to 1/PHI)
+    /// Gets the current gain
     pub fn gain(&self) -> f64 {
-        // The gain converges to INV_PHI = 0.6180339887498949
-        self.p / (self.p + self.p)  // Use self.p instead of undefined r
+        self.gain
     }
+}
 
-    /// Get the current error covariance
-    pub fn covariance(&self) -> f64 {
-        self.p
+/// Calculates the golden kalman gain (converges to 1/PHI)
+pub fn golden_kalman_gain(q: f64, r: f64, iterations: usize) -> f64 {
+    let mut p = 1.0;
+    for _ in 0..iterations {
+        p = q + p - (p * p) / (p + r);
     }
+    p / (p + r)  // Converges to 1/PHI
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_golden_kalman_convergence() {
         let mut filter = GoldenKalmanFilter::new();
@@ -73,12 +82,12 @@ mod tests {
         // Should converge within 0.1% tolerance
         assert!((gain - expected_gain).abs() < 0.001);
     }
-    
+
     #[test]
-    fn test_golden_kalman_basic() {
-        let mut filter = GoldenKalmanFilter::new();
+    fn test_golden_kalman_gain_function() {
+        let gain = golden_kalman_gain(1.0, 1.0, 100);
+        let expected_gain = 0.6180339887498949; // 1/PHI
         
-        let result = filter.update(1.0, 0.1, 0.1);
-        assert!(result.is_finite());
+        assert!((gain - expected_gain).abs() < 0.001);
     }
 }
