@@ -1,12 +1,10 @@
-// Fibonacci Math Library
+//! Fibonacci Math Library for HilliumOS
+//! Provides Golden Ratio optimized mathematical primitives for robotics
 
-//! A library providing Fibonacci-optimized mathematical primitives
-//! for robotics and cognitive systems.
-
-pub mod golden_constants;
-pub mod golden_kalman;
+pub mod constants;
+pub mod kalman;
 pub mod fibonacci_heap;
-pub mod logarithmic_spiral;
+pub mod spiral;
 
 #[cfg(test)]
 mod tests;
