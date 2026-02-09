@@ -7,7 +7,6 @@ edition = "2021"
 nalgebra = "0.32"
 ndarray = "0.15"
 pyo3 = { version = "0.20", features = ["extension-module"] }
-criterion = "0.5"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
