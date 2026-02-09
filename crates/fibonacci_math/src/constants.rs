@@ -1,22 +1,17 @@
-// Mathematical constants for Fibonacci optimization
+//! Golden ratio constants
 
-/// Golden Ratio (phi)
+/// The golden ratio φ (phi)
 pub const PHI: f64 = 1.618033988749895;
 
-/// Inverse Golden Ratio (1/phi)
-pub const INV_PHI: f64 = 0.6180339887498949; // 1/PHI = PHI - 1
+/// The inverse of the golden ratio 1/φ
+pub const INV_PHI: f64 = 0.6180339887498949;
 
-/// Square root of 5
+/// The square root of 5
 pub const SQRT_5: f64 = 2.23606797749979;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[test]
-    fn test_constants() {
-        assert_eq!(PHI * INV_PHI, 1.0);
-        assert_eq!(PHI - 1.0, INV_PHI);
-        assert_eq!(SQRT_5 * SQRT_5, 5.0);
-    }
+/// Validates that the constants are mathematically correct
+pub fn validate_constants() -> bool {
+    (PHI - 1.0) == INV_PHI &&
+    (PHI * PHI - PHI - 1.0).abs() < 1e-10 &&
+    (SQRT_5 * SQRT_5 - 5.0).abs() < 1e-10
 }

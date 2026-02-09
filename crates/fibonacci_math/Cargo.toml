@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+pyo3 = { version = "0.20", features = ["extension-module"] }
 nalgebra = "0.32"
 ndarray = "0.15"
-pyo3 = { version = "0.20", features = ["extension-module"] }
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib"]

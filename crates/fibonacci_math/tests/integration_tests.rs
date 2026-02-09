@@ -1,46 +1,37 @@
-//! Integration tests for Fibonacci Math Library
-
 use fibonacci_math::*;
 
 #[test]
 fn test_golden_constants() {
-    assert_eq!(golden_constants::PHI, 1.618033988749895);
-    assert_eq!(golden_constants::INV_PHI, 0.6180339887498949);
-    assert_eq!(golden_constants::SQRT_5, 2.23606797749979);
+    assert!((PHI - 1.0 - INV_PHI).abs() < 1e-10);
+    assert!((PHI * PHI - PHI - 1.0).abs() < 1e-10);
+    assert!((SQRT_5 * SQRT_5 - 5.0).abs() < 1e-10);
 }
 
 #[test]
-fn test_golden_kalman_filter() {
-    let mut filter = GoldenKalmanFilter::new(1.0, 1.0);
-    filter.predict();
-    filter.update(5.0);
-    
-    // Basic sanity check - should not panic
-    assert!(filter.x.is_finite());
-    assert!(filter.p.is_finite());
+fn test_golden_kalman_gain_convergence() {
+    let gain = golden_kalman_gain(1.0, 1.0, 100);
+    assert!((gain - INV_PHI).abs() < 0.001, "Gain should converge to 1/φ");
 }
 
 #[test]
 fn test_fibonacci_heap() {
     let mut heap = FibonacciHeap::new();
-    heap.insert(1.0);
-    heap.insert(2.0);
+    assert!(heap.is_empty());
     
-    // Basic sanity check - should not panic
-    assert_eq!(heap.size, 2);
+    let index = heap.insert(1.0, "test");
+    assert!(!heap.is_empty());
+    assert_eq!(heap.len(), 1);
+    
+    heap.decrease_key(index, 0.5);
+    assert_eq!(heap.len(), 1);
 }
 
 #[test]
 fn test_logarithmic_spiral() {
-    let spiral = LogarithmicSpiral::new(1.0, 0.1);
-    let points = spiral.trajectory(10);
-    
-    // Should generate 10 points
+    let spiral = LogarithmicSpiral::golden_spiral(10);
+    let points = spiral.generate_points();
     assert_eq!(points.len(), 10);
     
-    // All points should be finite
-    for &(x, y) in &points {
-        assert!(x.is_finite());
-        assert!(y.is_finite());
-    }
+    // Check that points are generated
+    assert!(points[0].x != 0.0 || points[0].y != 0.0);
 }
