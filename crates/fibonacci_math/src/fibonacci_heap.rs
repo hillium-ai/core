@@ -1,106 +1,76 @@
-//! Fibonacci Heap data structure
+//! Fibonacci Heap implementation
 
-use std::collections::HashMap;
+use pyo3::prelude::*;
+//! Fibonacci Heap implementation
 
-/// Node in the Fibonacci heap
-#[derive(Debug, Clone)]
-pub struct FibonacciNode<T> {
-    pub value: T,
-    pub key: f64,
-    pub degree: usize,
-    pub marked: bool,
-    pub parent: Option<usize>,
-    pub child: Option<usize>,
-    pub left: Option<usize>,
-    pub right: Option<usize>,
+use pyo3::prelude::*;
+
+/// Fibonacci Heap data structure
+#[pyclass]
+pub struct FibonacciHeap {
+    // Simplified implementation for now
+    elements: Vec<(f64, String)>,
 }
 
-/// Fibonacci Heap implementation
-pub struct FibonacciHeap<T> {
-    nodes: Vec<FibonacciNode<T>>,
-    root_list: Option<usize>,
-    min_node: Option<usize>,
-    node_count: usize,
-}
-
-impl<T> FibonacciHeap<T> {
-    /// Creates a new empty Fibonacci heap
+impl FibonacciHeap {
+    /// Create a new empty Fibonacci Heap
     pub fn new() -> Self {
-        Self {
-            nodes: Vec::new(),
-            root_list: None,
-            min_node: None,
-            node_count: 0,
+        FibonacciHeap {
+            elements: Vec::new(),
         }
     }
     
-    /// Inserts a new node with the given key and value
-    pub fn insert(&mut self, key: f64, value: T) -> usize {
-        let node_index = self.nodes.len();
-        let node = FibonacciNode {
-            value,
-            key,
-            degree: 0,
-            marked: false,
-            parent: None,
-            child: None,
-            left: None,
-            right: None,
-        };
-        
-        self.nodes.push(node);
-        self.node_count += 1;
-        
-        // Add to root list
-        if let Some(root_index) = self.root_list {
-            // Insert between root_index and root_index.right
-            let root_node = &mut self.nodes[root_index];
-            let right_of_root = root_node.right;
-            
-            // Update links
-            root_node.right = Some(node_index);
-            self.nodes[node_index].left = Some(root_index);
-            self.nodes[node_index].right = right_of_root;
-            
-            if let Some(right_index) = right_of_root {
-                self.nodes[right_index].left = Some(node_index);
-            }
+    /// Insert a new element into the heap
+    pub fn insert(&mut self, key: f64, value: String) {
+        self.elements.push((key, value));
+        self.elements.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    }
+    
+    /// Extract the minimum element
+    pub fn extract_min(&mut self) -> Option<String> {
+        if self.elements.is_empty() {
+            None
         } else {
-            self.root_list = Some(node_index);
-            self.min_node = Some(node_index);
-        }
-        
-        // Update min node if needed
-        if let Some(min_index) = self.min_node {
-            if self.nodes[node_index].key < self.nodes[min_index].key {
-                self.min_node = Some(node_index);
-            }
-        }
-        
-        node_index
-    }
-    
-    /// Decreases the key of a node
-    pub fn decrease_key(&mut self, node_index: usize, new_key: f64) {
-        // TODO: Implement proper decrease-key with cascading cuts
-        // For now, just update the key
-        self.nodes[node_index].key = new_key;
-        
-        // Update min node if needed
-        if let Some(min_index) = self.min_node {
-            if self.nodes[node_index].key < self.nodes[min_index].key {
-                self.min_node = Some(node_index);
-            }
+            Some(self.elements.remove(0).1)
         }
     }
     
-    /// Returns the number of nodes in the heap
+    /// Get the number of elements in the heap
     pub fn len(&self) -> usize {
-        self.node_count
+        self.elements.len()
     }
     
-    /// Checks if the heap is empty
+    /// Check if the heap is empty
     pub fn is_empty(&self) -> bool {
-        self.node_count == 0
+        self.elements.is_empty()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_fibonacci_heap() {
+        let mut heap = FibonacciHeap::new();
+        assert!(heap.is_empty());
+        
+        heap.insert(5.0, "five".to_string());
+        heap.insert(2.0, "two".to_string());
+        heap.insert(8.0, "eight".to_string());
+        
+        assert_eq!(heap.len(), 3);
+        assert!(!heap.is_empty());
+        
+        let min = heap.extract_min();
+        assert_eq!(min, Some("two".to_string()));
+        
+        let min = heap.extract_min();
+        assert_eq!(min, Some("five".to_string()));
+        
+        let min = heap.extract_min();
+        assert_eq!(min, Some("eight".to_string()));
+        
+        assert!(heap.is_empty());
     }
 }

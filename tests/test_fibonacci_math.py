@@ -1,51 +1,48 @@
-import unittest
-import sys
-import os
+import pytest
+from fibonacci_math import (
+    PHI,
+    INV_PHI,
+    SQRT_5,
+    GoldenKalmanFilter,
+    FibonacciHeap,
+    generate_spiral_points
+)
 
-# Add the project root to Python path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + '/..')
+def test_golden_constants():
+    assert abs(PHI * INV_PHI - 1.0) < 1e-10
+    assert abs(PHI - 1.0 - INV_PHI) < 1e-10
+    assert abs(SQRT_5 * SQRT_5 - 5.0) < 1e-10
 
-try:
-    import fibonacci_math
-    HAS_FIBONACCI_MATH = True
-except ImportError:
-    HAS_FIBONACCI_MATH = False
+def test_golden_kalman_filter():
+    filter = GoldenKalmanFilter(1.0, 1.0)
+    filter.predict()
+    filter.update()
+    # Should converge to golden ratio
+    assert abs(filter.get_gain() - INV_PHI) < 0.001
 
-class TestFibonacciMath(unittest.TestCase):
+def test_fibonacci_heap():
+    heap = FibonacciHeap()
+    assert heap.is_empty()
     
-    def test_constants_exist(self):
-        if not HAS_FIBONACCI_MATH:
-            self.skipTest("fibonacci_math not available")
-        
-        # Test that constants are accessible
-        self.assertTrue(hasattr(fibonacci_math, 'PHI'))
-        self.assertTrue(hasattr(fibonacci_math, 'INV_PHI'))
-        self.assertTrue(hasattr(fibonacci_math, 'SQRT_5'))
-        
-    def test_golden_kalman_convergence(self):
-        if not HAS_FIBONACCI_MATH:
-            self.skipTest("fibonacci_math not available")
-        
-        # Test that we can call the Kalman filter function
-        try:
-            # This should work if the library is properly built
-            result = fibonacci_math.golden_kalman_gain(1.0, 1.0, 100)
-            self.assertIsInstance(result, float)
-        except AttributeError:
-            self.skipTest("golden_kalman_gain not implemented")
-        
-    def test_fibonacci_heap_operations(self):
-        if not HAS_FIBONACCI_MATH:
-            self.skipTest("fibonacci_math not available")
-        
-        # Test that we can call Fibonacci heap functions
-        try:
-            # This should work if the library is properly built
-            heap = fibonacci_math.FibonacciHeap()
-            self.assertTrue(hasattr(heap, 'push'))
-            self.assertTrue(hasattr(heap, 'pop'))
-        except AttributeError:
-            self.skipTest("FibonacciHeap not implemented")
+    heap.insert(5.0, "five")
+    heap.insert(2.0, "two")
+    heap.insert(8.0, "eight")
+    
+    assert heap.len() == 3
+    assert not heap.is_empty()
+    
+    min_val = heap.extract_min()
+    assert min_val == "two"
+    
+    min_val = heap.extract_min()
+    assert min_val == "five"
+    
+    min_val = heap.extract_min()
+    assert min_val == "eight"
+    
+    assert heap.is_empty()
 
-if __name__ == '__main__':
-    unittest.main()
+def test_spiral_points():
+    points = generate_spiral_points(1.0, 0.1, 10)
+    assert len(points) == 10
+    assert points[0] == (1.0, 0.0)
