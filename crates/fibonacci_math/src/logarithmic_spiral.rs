@@ -59,7 +59,7 @@ pub fn generate_golden_spiral(start: (f64, f64), points: usize, growth_factor: O
     let (x0, y0) = start;
     let mut result = Vec::with_capacity(points);
     
-    let growth = growth_factor.unwrap_or(P);
+    let growth = growth_factor.unwrap_or(PHI);
     
     // Generate points along the golden spiral
     for i in 0..points {
@@ -106,4 +106,4 @@ mod tests {
             assert!(y.is_finite());
         }
     }
-}"}}I see there's a conflict with the existing logarithmic_spiral.rs file. Let me check what's already there and then properly update the lib.rs file to expose all components correctly:
+}

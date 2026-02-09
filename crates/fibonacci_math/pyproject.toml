@@ -1,0 +1,15 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "fibonacci_math"
+version = "0.1.0"
+description = "Neuro-Fibonacci Math Libraries for HilliumOS"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+python-source = "python"
+module-name = "fibonacci_math._fibonacci_math"

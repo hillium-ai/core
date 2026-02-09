@@ -11,12 +11,6 @@ use golden_kalman::*;
 use fibonacci_heap::*;
 use logarithmic_spiral::*;
 
-#[pyfunction]
-fn generate_spiral_points(a: f64, b: f64, n: usize) -> Vec<(f64, f64)> {
-    let spiral = LogarithmicSpiral::new(a, b);
-    spiral.generate_points(n)
-}
-
 #[pymodule]
 fn _fibonacci_math(_py: Python, m: &PyModule) -> PyResult<()> {
     // Export constants
@@ -27,10 +21,10 @@ fn _fibonacci_math(_py: Python, m: &PyModule) -> PyResult<()> {
     // Export structs
     m.add_class::<GoldenKalmanFilter>()?;
     m.add_class::<FibonacciHeap>()?;
-    m.add_class::<LogarithmicSpiral>()?;
     
     // Export functions
     m.add_function(wrap_pyfunction!(generate_spiral_points, m)?)?;
+    m.add_function(wrap_pyfunction!(generate_golden_spiral, m)?)?;
     
     Ok(())
 }
