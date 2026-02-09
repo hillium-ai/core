@@ -9,4 +9,5 @@ nalgebra = "0.32"
 ndarray = "0.15"
 
 [lib]
+name = "fibonacci_math"
 crate-type = ["cdylib"]
