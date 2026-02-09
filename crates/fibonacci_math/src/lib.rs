@@ -1,9 +1,11 @@
-pub mod constants;
-pub mod kalman;
-pub mod fibonacci_heap;
-pub mod spiral;
+//! Fibonacci Math Library
+//!
+//! This crate provides math primitives optimized using Fibonacci sequences and the Golden Ratio.
 
-pub use constants::*;
-pub use kalman::*;
-pub use fibonacci_heap::*;
-pub use spiral::*;
+pub mod golden_constants;
+pub mod golden_kalman;
+pub mod fibonacci_heap;
+pub mod logarithmic_spiral;
+
+#[cfg(test)]
+mod tests;
