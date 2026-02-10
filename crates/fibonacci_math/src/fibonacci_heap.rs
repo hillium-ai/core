@@ -291,7 +291,7 @@ impl FibonacciHeap {
             // While there's another node with the same degree
             while let Some(y) = degree_array[d] {
                 // Make sure x is the smaller key
-                if (self.nodes[x].key as f64) > (self.nodes[y].key as f64) { // Explicit f64 comparison
+                if self.nodes[x].key > self.nodes[y].key { // Type annotation needed for comparison
                     std::mem::swap(&mut x, &mut y);
                 }
                 
