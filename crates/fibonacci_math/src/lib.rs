@@ -31,5 +31,5 @@ fn _fibonacci_math(_py: Python, m: &PyModule) -> PyResult<()> {
     // Export functions
     m.add_function(wrap_pyfunction!(generate_spiral_points, m)?)?;
     
-    Ok(())
+   (())
 }

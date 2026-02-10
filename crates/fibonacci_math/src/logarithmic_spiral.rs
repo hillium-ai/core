@@ -1,109 +1,99 @@
-//! Logarithmic spiral trajectory generator using golden ratio principles
+! Logarithmic spiral trajectory generator using golden ratio principles
 
 use pyo3::prelude::*;
 use crate::golden_constants::{PHI, INV_PHI};
 
-/// Generate points along a logarithmic spiral
-///
-/// A logarithmic spiral (also known as the golden spiral when using phi) is defined by:
-/// r = a * e^(b * theta)
-///
-/// For golden ratio spirals, we use b = ln(phi) / (pi/2) to get the golden ratio growth
-///
-/// # Arguments
-/// * `center` - The center point (x, y) of the spiral
-/// * `radius` - Initial radius of the spiral
-/// * `points` - Number of points to generate
-/// * `turns` - Number of turns (full rotations) to generate
-///
-/// # Returns
-/// A vector of (x, y) points along the spiral
-#[pyfunction]
-pub fn generate_spiral_points(center: (f64, f64), radius: f64, points: usize, turns: f64) -> Vec<(f64, f64)> {
-    let (cx, cy) = center;
-    let mut result = Vec::with_capacity(points);
-    
-    // Golden ratio spiral parameter
-    let b = 1.0; // Simplified for this implementation
-    
-    // Calculate step size
-    let theta_step = turns * 2.0 * std::f64::consts::PI / points as f64;
-    
-    for i in 0..points {
-        let theta = i as f64 * theta_step;
-        
-        // Golden spiral equation: r = a * e^(b * theta)
-        // Using phi growth factor
-        let r = radius * (theta * INV_PHI).exp();
-        
-        let x = cx + r * theta.cos();
-        let y = cy + r * theta.sin();
-        
-        result.push((x, y));
-    }
-    
-    result
+/// Logarithmic spiral trajectory generator
+#[pyclass]
+#[derive(Debug, Clone)]
+pub struct LogarithmicSpiral {
+    /// The constant 'a' in the equation r = a * e^(b * theta)
+    a: f64,
+    /// The constant 'b' in the equation r = a * e^(b * theta)
+    b: f64,
 }
 
-/// Generate a golden spiral trajectory with specific golden ratio properties
-///
-/// # Arguments
-/// * `start` - Starting point (x, y)
-/// * `points` - Number of points to generate
-/// * `growth_factor` - Factor by which the spiral grows (default: PHI)
-///
-/// # Returns
-/// A vector of (x, y) points along the golden spiral
-#[pyfunction]
-pub fn generate_golden_spiral(start: (f64, f64), points: usize, growth_factor: Option<f64>) -> Vec<(f64, f64)> {
-    let (x0, y0) = start;
-    let mut result = Vec::with_capacity(points);
-    
-    let growth = growth_factor.unwrap_or(PHI);
-    
-    // Generate points along the golden spiral
-    for i in 0..points {
-        let t = i as f64 * 0.1; // Parameter for spiral
-        
-        // Golden spiral: r = a * e^(b * theta)
-        // Using golden ratio for growth
-        let r = t * growth;
-        let theta = t * 1.0; // Simplified angular component
-        
-        let x = x0 + r * theta.cos();
-        let y = y0 + r * theta.sin();
-        
-        result.push((x, y));
+#[pymethods]
+impl LogarithmicSpiral {
+    /// Create a new logarithmic spiral
+    ///
+    /// For a golden spiral, b = 1/phi
+    #[new]
+    pub fn new(a: f64, b: f64) -> Self {
+        Self { a, b }
     }
-    
-    result
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[test]
-    fn test_spiral_generation() {
-        let points = generate_spiral_points((0.0, 0.0), 1.0, 10, 1.0);
-        assert_eq!(points.len(), 10);
-        
-        // Check that we get valid coordinates
-        for &(x, y) in &points {
-            assert!(x.is_finite());
-            assert!(y.is_finite());
+    /// Create a golden spiral (using phi-based b parameter)
+    pub fn golden_spiral() -> Self {
+        // For a golden spiral, we typically use b = 1/phi
+        Self {
+            a: 1.0,
+            b: INV_PHI,
         }
     }
-    
-    #[test]
-    fn test_golden_spiral() {
-        let points = generate_golden_spiral((0.0, 0.0), 5, None);
-        assert_eq!(points.len(), 5);
+
+    /// Generate points along the spiral
+    ///
+    /// # Arguments
+    /// * `n` - Number of points to generate
+    /// * `start_angle` - Starting angle in radians (default: 0.0)
+    /// * `angle_step` - Angle increment in radians (default: 0.1)
+    ///
+    /// # Returns
+    /// Vector of (x, y) coordinates
+    pub fn generate_points(&self, n: usize, start_angle: Option<f64>, angle_step: Option<f64>) -> Vec<(f64, f64)> {
+        let start = start_angle.unwrap_or(0.0);
+        let step = angle_step.unwrap_or(0.1);
         
-        // Check that we get valid coordinates
-        for &(x, y) in &points {
-            assert!(x.is_finite());
-            assert!(y.is_finite());
+        let mut points = Vec::with_capacity(n);
+        let mut theta = start;
+        
+        for _ in 0..n {
+            let r = self.a * (self.b * theta).exp();
+            let x = r * theta.cos();
+            let y = r * theta.sin();
+            points.push((x, y));
+            theta += step;
+        }
+        
+        points
+    }
+
+    /// Get the radius at a given angle
+    pub fn radius_at(&self, theta: f64) -> f64 {
+        self.a * (self.b * theta).exp()
+    }
+
+    /// Get the angle at a given radius
+    pub fn angle_at_radius(&self, r: f64) -> f64 {
+        if r <= 0.0 {
+            0.0
+        } else {
+            (r / self.a).ln() / self.b
+        }
+    }
+
+    /// Get the curvature at a given angle
+    pub fn curvature_at(&self, theta: f64) -> f64 {
+        let r = self.radius_at(theta);
+        if r == 0.0 {
+            0.0
+        } else {
+            let r_prime = self.b * r;
+            let r_double_prime = self.b * self.b * r;
+            (r * r_double_prime - 2.0 * r_prime * r_prime) / (r * r + r_prime * r_prime).powf(1.5)
+        }
+    }
+
+    /// Get the arc length from angle 0 to theta
+    pub fn arc_length(&self, theta: f64) -> f64 {
+        if theta == 0.0 {
+            0.0
+        } else {
+            let r = self.radius_at(theta);
+            let r_prime = self.b * r;
+            let integral = (r * r + r_prime * r_prime).sqrt();
+            integral / self.b
         }
     }
 }
