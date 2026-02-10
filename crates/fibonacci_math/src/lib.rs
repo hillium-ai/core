@@ -1,5 +1,4 @@
 use pyo3::prelude::*;
-use pyo3::types::PyFloat;
 
 mod golden_constants;
 mod golden_kalman;
