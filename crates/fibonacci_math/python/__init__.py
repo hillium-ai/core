@@ -1,3 +1,3 @@
-# Python bindings for fibonacci_math crate
+# Python interface for fibonacci_math crate
 
-from .bindings import *
+from ._fibonacci_math import *
