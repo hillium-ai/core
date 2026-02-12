@@ -25,7 +25,7 @@ fn generate_spiral_points(a: f64, b: f64, n: usize) -> Vec<(f64, f64)> {
 fn _fibonacci_math(_py: Python, m: &PyModule) -> PyResult<()> {
     // Export constants
     m.add(\
-    m.add("INV_PHI", INV_PHI)?;
+    m.add(\
     m.add("SQRT_5", SQRT_5)?;
     
     // Export structs
