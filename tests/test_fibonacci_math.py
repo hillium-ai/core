@@ -7,7 +7,7 @@ import math
 
 def test_constants():
     """Test that all golden ratio constants are correctly defined"""
-    # Test PHI constant
+    # Test PHI constant (named P in the Python bindings)
     assert abs(fibonacci_math.P - 1.618033988749895) < 1e-15
     
     # Test INV_PHI constant  

@@ -63,10 +63,10 @@ impl GoldenKalmanFilter {
 /// This function demonstrates the mathematical convergence to the golden ratio
 /// as described in Benavoli et al. (2009)
 pub fn golden_kalman_gain(q: f64, r: f64, iterations: usize) -> f64 {
-    // The Riccati equation converges to (sqrt(5) - 1) / 2
+    // The Riccati equation converges to (sqrt(5) - 1) / 2 = 0.6180339887498949
     let mut p = 1.0;
     for _ in 0..iterations {
         p = q + p - (p * p) / (p + r);
     }
-    p / (p + r)  // Converges to INV_PHI
+    p / (p + r)  // Converges to INV_PHI (1/φ)
 }
