@@ -103,28 +103,28 @@ pub mod zenoh_bridge {
     impl ZenohPublisher {
         pub fn new() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
             let config = Config::default();
-            let session = zenoh::open(config).res().wait()?;
+            let session = zenoh::open(config).res()?;
             Ok(Self { session })
         }
         
         pub fn publish_pose(&self, pose: &VrPose) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let key = "hillium/vr/pose";
             let payload = bincode::serialize(pose)?;
-            self.session.put(key, payload).res().wait()?;
+            self.session.put(key, payload).res()?;
             Ok(())
         }
         
         pub fn publish_haptic(&self, haptic: &HapticFeedback) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let key = "hillium/vr/haptic";
             let payload = bincode::serialize(haptic)?;
-            self.session.put(key, payload).res().wait()?;
+            self.session.put(key, payload).res()?;
             Ok(())
         }
         
         pub fn publish_gaze(&self, gaze: &GazeData) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let key = "hillium/vr/gaze";
             let payload = bincode::serialize(gaze)?;
-            self.session.put(key, payload).res().wait()?;
+            self.session.put(key, payload).res()?;
             Ok(())
         }
     }
