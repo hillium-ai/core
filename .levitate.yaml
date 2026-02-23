@@ -5,8 +5,8 @@ project:
 
 rules:
   - "EXECUTION ROOT: You are currently AT the project root."
-  - "NO NESTING: All file operations must happen in the current directory ('.')."
-  - "FORBIDDEN: DO NOT create a project subfolder (e.g. 'hilliumos/', 'hillium-core/')."
+  - "STRUCTURE: Use standard directory structures (e.g. 'tests/', 'crates/', 'python/')."
+  - "TESTS: All Python tests and verification scripts MUST live in 'tests/'."
   - "DOCS: MVP docs and Work Packages live in /Users/jsaldana/GitLocalRepo/HilliumOS (read-only)."
   - "PRIVATE: Roadmap/internal docs live in /Users/jsaldana/GitLocalRepo/HilliumOS-Private (confidential)."
   - "ROOT GUARD: Do not cd outside this repo unless the user explicitly asks."
