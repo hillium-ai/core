@@ -93,38 +93,38 @@ pub mod zenoh_bridge {
     use super::*;
     use zenoh::config::Config;
     use zenoh::Session;
+    use zenoh::prelude::sync::SyncResolve;
     use bincode;
-    use zenoh::prelude::r#async::AsyncResolve;
     
     pub struct ZenohPublisher {
         session: Session,
     }
     
     impl ZenohPublisher {
-        pub async fn new() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        pub fn new() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
             let config = Config::default();
-            let session = zenoh::open(config).await?;
+            let session = zenoh::open(config).res().wait()?;
             Ok(Self { session })
         }
         
-        pub async fn publish_pose(&self, pose: &VrPose) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        pub fn publish_pose(&self, pose: &VrPose) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let key = "hillium/vr/pose";
             let payload = bincode::serialize(pose)?;
-            self.session.put(key, payload).res().await?;
+            self.session.put(key, payload).res().wait()?;
             Ok(())
         }
         
-        pub async fn publish_haptic(&self, haptic: &HapticFeedback) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        pub fn publish_haptic(&self, haptic: &HapticFeedback) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let key = "hillium/vr/haptic";
             let payload = bincode::serialize(haptic)?;
-            self.session.put(key, payload);
+            self.session.put(key, payload).res().wait()?;
             Ok(())
         }
         
-        pub async fn publish_gaze(&self, gaze: &GazeData) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        pub fn publish_gaze(&self, gaze: &GazeData) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let key = "hillium/vr/gaze";
             let payload = bincode::serialize(gaze)?;
-            self.session.put(key, payload)?;
+            self.session.put(key, payload).res().wait()?;
             Ok(())
         }
     }
@@ -193,5 +193,56 @@ pub mod haptic_bridge {
     }
 }
 
+/// WebRTC signaling server
+pub mod webrtc_bridge {
+    use super::*;
+    
+    pub struct WebRtcServer {
+        // WebRTC implementation details
+    }
+    
+    impl WebRtcServer {
+        pub fn new() -> Self {
+            Self {
+                // Initialize WebRTC server
+            }
+        }
+        
+        pub fn start_signaling(&self) -> Result<(), Box<dyn std::error::Error>> {
+            // Implementation
+            Ok(())
+        }
+        
+        pub fn handle_nat_traversal(&self) -> Result<(), Box<dyn std::error::Error>> {
+            // Implementation
+            Ok(())
+        }
+    }
+}
+
 pub mod hrec_writer;
 pub mod mock_data;
+
+/// Module for VR bridge functionality
+pub mod vr_bridge {
+    use super::*;
+    
+    /// VR Bridge API for Project Mirror
+    pub struct VrBridgeApi {
+        // API implementation details
+    }
+    
+    impl VrBridgeApi {
+        pub fn new() -> Self {
+            Self {
+                // Initialize API
+            }
+        }
+        
+        /// Initialize the VR bridge with all components
+        pub fn initialize(&self) -> Result<(), Box<dyn std::error::Error>> {
+            // Implementation
+            Ok(())
+        }
+    }
+}
