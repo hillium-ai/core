@@ -94,7 +94,7 @@ pub mod zenoh_bridge {
     use zenoh::config::Config;
     use zenoh::Session;
     use bincode;
-    use zenoh::prelude::r#async::AsyncResolve;
+    use zenoh::prelude::*;
     
     pub struct ZenohPublisher {
         session: Session,
@@ -103,8 +103,8 @@ pub mod zenoh_bridge {
     impl ZenohPublisher {
         pub async fn new() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
             let config = Config::default();
-            let session = zenoh::open(config).res().await?;
-            Ok(Self { session })
+            let session = zenoh::open(config).await?;
+           Ok(Self { session })
         }
         
         pub async fn publish_pose(&self, pose: &VrPose) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
