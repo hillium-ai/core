@@ -1,55 +1,82 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from typing import Tuple, Optional
 
 
 class RerooterNetwork(nn.Module):
-    def __init__(self):
-        super(RerooterNetwork, self).__init__()
-        # Simple MLP for policy and value prediction
-        self.fc1 = nn.Linear(2 + 2 + 64, 128)  # start + goal + local_map (flattened)
-        self.fc2 = nn.Linear(128, 64)
-        self.policy_head = nn.Linear(64, 8)  # 8 actions (8-connected grid)
-        self.value_head = nn.Linear(64, 1)
-
-    def forward(self, start, goal, local_map):
-        # Flatten local_map to (batch_size, 64)
-        local_map = local_map.view(local_map.size(0), -1)
+    """
+    RerooterNetwork implements the policy network for √LTS planning.
+    
+    Input:
+        start: [x, y] (normalized coordinates)
+        goal: [x, y] (normalized coordinates)
+        local_map: Tensor (Grid around robot)
+    
+    Output:
+        policy_logits: Action probabilities (8-connected grid steps)
+        value: Estimated steps-to-goal
+    """
+    
+    def __init__(self, map_size: int = 32, hidden_dim: int = 128):
+        super().__init__()
+        self.map_size = map_size
+        self.hidden_dim = hidden_dim
         
-        # Ensure start and goal are batched (add batch dimension if needed)
-        if start.dim() == 1:
-            start = start.unsqueeze(0)
-        if goal.dim() == 1:
-            goal = goal.unsqueeze(0)
+        # MLP for processing the combined features
+        self.mlp = nn.Sequential(
+            nn.Linear(2 + 2 + map_size * map_size, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 2, 8 + 1)  # 8 actions + 1 value
+        )
         
-        # Concatenate inputs
-        x = torch.cat([start, goal, local_map], dim=-1)
+        # Separate policy and value outputs
+        self.policy_head = nn.Linear(8 + 1, 8)  # 8 actions
+        self.value_head = nn.Linear(8 + 1, 1)   # 1 value
         
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+    def forward(self, start: torch.Tensor, goal: torch.Tensor, local_map: torch.Tensor):
+        """
+        Forward pass through the rerooter network.
         
-        policy_logits = self.policy_head(x)
-        value = self.value_head(x)
+        Args:
+            start: Tensor of shape (batch_size, 2) representing start positions
+            goal: Tensor of shape (batch_size, 2) representing goal positions
+            local_map: Tensor of shape (batch_size, 1, map_size, map_size) representing local map
+            
+        Returns:
+            policy_logits: Tensor of shape (batch_size, 8) representing action logits
+            value: Tensor of shape (batch_size, 1) representing value estimate
+        """
+        # Flatten the local map
+        flat_map = local_map.view(local_map.size(0), -1)
+        
+        # Concatenate all inputs
+        x = torch.cat([start, goal, flat_map], dim=1)
+        
+        # Process through MLP
+        combined = self.mlp(x)
+        
+        # Split into policy and value
+        policy_logits = self.policy_head(combined)
+        value = self.value_head(combined)
         
         return policy_logits, value
 
+    def forward_scriptable(self, start: torch.Tensor, goal: torch.Tensor, local_map: torch.Tensor):
+        """
+        Forward pass that can be used with TorchScript
+        """
+        return self.forward(start, goal, local_map)
 
-# Export functionality for TorchScript
-if __name__ == "__main__":
-    # Create and export a model for testing
-    model = RerooterNetwork()
-    
-    # Create dummy inputs with batch dimension
-    start = torch.randn(1, 2)
-    goal = torch.randn(1, 2)
-    local_map = torch.randn(1, 8, 8)  # 8x8 grid
-    
-    # Test forward pass
-    policy_logits, value = model(start, goal, local_map)
-    print(f"Policy logits shape: {policy_logits.shape}")
-    print(f"Value shape: {value.shape}")
-    
-    # Export to TorchScript using script (not trace)
-    scripted_model = torch.jit.script(model)
-    scripted_model.save("rerooter.pt")
-    print("Model exported to rerooter.pt")
+    def export_to_torchscript(self, path: str):
+        """Export the model to TorchScript"""
+        # Create dummy inputs for tracing
+        dummy_start = torch.randn(1, 2)
+        dummy_goal = torch.randn(1, 2)
+        dummy_local_map = torch.randn(1, 1, self.map_size, self.map_size)
+        
+        # Trace the model
+        traced = torch.jit.trace(self, (dummy_start, dummy_goal, dummy_local_map))
+        torch.jit.save(traced, path)
+        return traced

@@ -3,6 +3,7 @@
 import json
 from typing import Dict, Any, Optional
 from loqus_core.inference.manager import NativeModelManager
+from loqus_core.cognitive_council.alignment_monitor import CollectiveAlignmentMonitor
 from loqus_core.schemas.action_plan import ActionPlan
 
 

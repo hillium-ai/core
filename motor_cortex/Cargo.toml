@@ -10,4 +10,3 @@ path = "src/lib.rs"
 [dependencies]
 nalgebra = "0.32"
 tch = "0.14"
-anyhow = "1.0"

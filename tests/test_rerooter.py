@@ -1,49 +1,63 @@
 import torch
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-
+import torch.nn as nn
 from loqus_core.motor.rerooter import RerooterNetwork
 
-def test_rerooter_network():
-    # Create model
-    model = RerooterNetwork()
+def test_rerooter_network_creation():
+    """Test that RerooterNetwork can be instantiated"""
+    network = RerooterNetwork()
+    assert network is not None
+    print("✅ RerooterNetwork instantiation test passed")
+
+
+def test_rerooter_network_forward_pass():
+    """Test that RerooterNetwork can run a forward pass"""
+    network = RerooterNetwork()
     
     # Create dummy inputs
-    start = torch.randn(2)
-    goal = torch.randn(2)
-    local_map = torch.randn(8, 8)  # 8x8 grid
+    batch_size = 1
+    start = torch.randn(batch_size, 2)
+    goal = torch.randn(batch_size, 2)
+    local_map = torch.randn(batch_size, 1, 32, 32)
     
-    # Test forward pass
-    policy_logits, value = model(start, goal, local_map)
+    # Run forward pass
+    policy_logits, value = network(start, goal, local_map)
     
-    # Check shapes
-    assert policy_logits.shape == (8,), f"Expected policy_logits shape (8,), got {policy_logits.shape}"
-    assert value.shape == (1,), f"Expected value shape (1,), got {value.shape}"
-    
-    print("RerooterNetwork test passed!")
-    
+    # Check output shapes
+    assert policy_logits.shape == (batch_size, 8)
+    assert value.shape == (batch_size, 1)
+    print("✅ RerooterNetwork forward pass test passed")
 
-def test_torchscript_export():
-    # Test that we can load the exported model
+
+def test_rerooter_network_export():
+    """Test that RerooterNetwork can export to TorchScript"""
+    network = RerooterNetwork()
+    
+    # Export to TorchScript
     try:
-        model = torch.jit.load("rerooter.pt")
-        print("TorchScript model loaded successfully")
-        
-        # Test with dummy inputs
-        start = torch.randn(2)
-        goal = torch.randn(2)
-        local_map = torch.randn(8, 8)
-        
-        # Forward pass
-        policy_logits, value = model(start, goal, local_map)
-        print(f"TorchScript forward pass successful. Policy logits shape: {policy_logits.shape}, Value shape: {value.shape}")
-        
+        network.export_to_torchscript('test_export.pt')
+        print("✅ RerooterNetwork export test passed")
     except Exception as e:
-        print(f"Error loading TorchScript model: {e}")
+        print(f"❌ RerooterNetwork export failed: {e}")
+        raise
+
+
+def test_rerooter_network_torchscript_loading():
+    """Test that exported TorchScript model can be loaded"""
+    # First export
+    network = RerooterNetwork()
+    network.export_to_torchscript('test_export.pt')
+    
+    # Try to load it back
+    try:
+        loaded_model = torch.jit.load('test_export.pt')
+        print("✅ RerooterNetwork TorchScript loading test passed")
+    except Exception as e:
+        print(f"❌ RerooterNetwork TorchScript loading failed: {e}")
         raise
 
 if __name__ == "__main__":
-    test_rerooter_network()
-    test_torchscript_export()
+    test_rerooter_network_creation()
+    test_rerooter_network_forward_pass()
+    test_rerooter_network_export()
+    test_rerooter_network_torchscript_loading()
     print("All tests passed!")

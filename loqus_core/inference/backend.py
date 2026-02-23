@@ -241,14 +241,25 @@ class PowerInferBackend(InferenceBackend):
     def __init__(self):
         self._model_handle = None
         self._is_loaded = False
+        self._ffi_module = None
         # Import the PowerInfer FFI module
         try:
-            from .powerinfer_backend.main import PowerInferBackend as PowerInferBackendImpl
-            self._backend_impl = PowerInferBackendImpl()
+            from .powerinfer_ffi import (
+                powerinfer_load_model,
+                powerinfer_generate,
+                powerinfer_destroy_model,
+                powerinfer_is_loaded,
+                is_powerinfer_available
+            )
+            self._load_model_func = powerinfer_load_model
+            self._generate_func = powerinfer_generate
+            self._destroy_model_func = powerinfer_destroy_model
+            self._is_loaded_func = powerinfer_is_loaded
+            self._is_available = is_powerinfer_available()
         except ImportError:
             logger.warning("PowerInfer backend not available - using mock mode")
             # Create a mock implementation
-            self._backend_impl = None
+            self._is_available = False
     
     def load_model(self, path: str, config: Dict[str, Any]) -> None:
         """

@@ -4,14 +4,23 @@ members = [
     "crates/aegis_core",
     "crates/associative_core",
     "crates/consolidation",
+    "crates/fibonacci_math",
     "crates/hillium_backend",
     "crates/hillium_hal",
+    "crates/hillium_vr",
     "crates/powerinfer-rs",
     "crates/powerinfer_ffi",
-    "crates/powerinfer_ffi_new",
+    "crates/restrav_detector",
     "crates/working_memory",
     "hipposerver",
     "motor_cortex",
+]
+# v22.8.0: Zombie crates excluded — created by model in previous WP-042 runs
+# with variant names. The canonical crate is restrav_detector (used by aegis_core).
+exclude = [
+    "crates/rest_rav_detector",
+    "crates/restav_detector",
+    "crates/restrav_validator",
 ]
 
 [workspace.package]

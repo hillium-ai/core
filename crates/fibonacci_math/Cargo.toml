@@ -1,0 +1,13 @@
+[package]
+name = "fibonacci_math"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pyo3 = { version = "0.20", features = ["extension-module"] }
+nalgebra = "0.32"
+ndarray = "0.15"
+
+[lib]
+name = "fibonacci_math"
+crate-type = ["cdylib", "rlib"]

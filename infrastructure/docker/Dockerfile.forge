@@ -38,10 +38,10 @@ ARG POWERINFER_BRANCH=main
 RUN git clone --depth 1 --branch "${POWERINFER_BRANCH}" "${POWERINFER_REPO}" /tmp/PowerInfer \
     && cd /tmp/PowerInfer \
     && cmake -B build \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DBUILD_SHARED_LIBS=ON \
-        -DLLAMA_BLAS=ON \
-        -DLLAMA_OPENBLAS=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_SHARED_LIBS=ON \
+    -DLLAMA_BLAS=ON \
+    -DLLAMA_OPENBLAS=ON \
     && cmake --build build -j$(nproc) \
     && cmake --install build --prefix /usr/local \
     && rm -rf /tmp/PowerInfer
@@ -55,7 +55,8 @@ RUN python3.11 -m pip install --no-cache-dir --break-system-packages \
     silero-vad loguru pydantic \
     scipy sounddevice python-dotenv \
     langchain duckdb sqlparse polars pyarrow textual watchfiles \
-    RestrictedPython pandas pyyaml
+    RestrictedPython pandas pyyaml \
+    maturin piper-tts onnxruntime mujoco
 
 # --- LAYER 5: RUST TOOLCHAIN ---
 ENV RUSTUP_HOME=/usr/local/rustup \
@@ -75,7 +76,12 @@ RUN groupadd -g ${GROUP_ID} forge 2>/dev/null || true && \
 ENV CARGO_TARGET_DIR=/workspace/target \
     RUST_BACKTRACE=1 \
     PYTHONPATH="/workspace" \
-    PATH="/home/forgeuser/.local/bin:${PATH}"
+    PATH="/home/forgeuser/.local/bin:${PATH}" \
+    HILLIUM_SIM=1 \
+    FORGE_SIMULATION=1 \
+    CARGO_TERM_COLOR=always \
+    CARGO_INCREMENTAL=1 \
+    OLLAMA_HOST=http://ollama:11434
 
 WORKDIR /workspace
 
