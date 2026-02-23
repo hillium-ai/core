@@ -94,7 +94,7 @@ pub mod zenoh_bridge {
     use zenoh::config::Config;
     use zenoh::Session;
     use bincode;
-    use zenoh::prelude::*;
+    use zenoh::prelude::r#async::AsyncResolve;
     
     pub struct ZenohPublisher {
         session: Session,
@@ -103,28 +103,28 @@ pub mod zenoh_bridge {
     impl ZenohPublisher {
         pub async fn new() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
             let config = Config::default();
-            let session = zenoh::open(config)?;
+            let session = zenoh::open(config).await?;
             Ok(Self { session })
         }
         
         pub async fn publish_pose(&self, pose: &VrPose) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let key = "hillium/vr/pose";
             let payload = bincode::serialize(pose)?;
-            self.session.put(key, payload).await;
+            self.session.put(key, payload).res().await?;
             Ok(())
         }
         
         pub async fn publish_haptic(&self, haptic: &HapticFeedback) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let key = "hillium/vr/haptic";
             let payload = bincode::serialize(haptic)?;
-            self.session.put(key, payload).await;
+            self.session.put(key, payload);
             Ok(())
         }
         
         pub async fn publish_gaze(&self, gaze: &GazeData) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let key = "hillium/vr/gaze";
             let payload = bincode::serialize(gaze)?;
-            self.session.put(key, payload).await?;
+            self.session.put(key, payload)?;
             Ok(())
         }
     }
