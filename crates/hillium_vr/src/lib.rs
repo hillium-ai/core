@@ -74,20 +74,20 @@ impl VrBridge {
             eprintln!("Failed to initialize OpenXR: {}", e);
             return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to initialize OpenXR: {}", e)));
         }
-        
+
         // Connect to headset
         if let Err(e) = self.openxr_bridge.connect_headset() {
             eprintln!("Failed to connect to headset: {}", e);
             return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to connect to headset: {}", e)));
         }
-        
+
         // Start WebRTC signaling
         if let Err(e) = self.webrtc_server.start_signaling() {
             eprintln!("Failed to start WebRTC signaling: {}", e);
             return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to start WebRTC signaling: {}", e)));
         }
-        
-self.streaming = true;
+
+        self.streaming = true;
         Ok(())
     }
 
@@ -98,7 +98,7 @@ self.streaming = true;
             eprintln!("Failed to disconnect from headset: {}", e);
             return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to disconnect from headset: {}", e)));
         }
-        
+
         self.streaming = false;
         Ok(())
     }
@@ -108,7 +108,7 @@ self.streaming = true;
         if !self.streaming {
             return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Streaming not active".to_string()));
         }
-        
+
         match self.openxr_bridge.capture_pose() {
             Ok(pose) => Ok(pose),
             Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to capture pose: {}", e))),
@@ -120,14 +120,14 @@ self.streaming = true;
         if !self.streaming {
             return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Streaming not active".to_string()));
         }
-        
+
         // For now, return mock haptic data
         Ok(HapticFeedback {
             timestamp_ns: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
                 .as_nanos() as u64,
-            force: 0.5, // Mock force value
+            force: 0.5,
             location: "hand".to_string(),
         })
     }
@@ -137,7 +137,7 @@ self.streaming = true;
         if !self.streaming {
             return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Streaming not active".to_string()));
         }
-        
+
         // For now, return mock gaze data
         Ok(GazeData {
             timestamp_ns: std::time::SystemTime::now()
@@ -147,132 +147,5 @@ self.streaming = true;
             position: [0.0, 0.0, 0.0],
             direction: [0.0, 0.0, -1.0],
         })
-    }
-}
-
-/// Zenoh publisher for VR data
-pub mod zenoh_bridge {
-    use super::*;
-    use zenoh::config::Config;
-    use zenoh::Session;
-    use zenoh::prelude::sync::SyncResolve;
-    use bincode;
-    
-    pub struct ZenohPublisher {
-        session: Session,
-    }
-    
-    impl ZenohPublisher {
-        pub fn new() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-            let config = Config::default();
-            let session = zenoh::open(config).res()?;
-            Ok(Self { session })
-        }
-        
-        pub fn publish_pose(&self, pose: &VrPose) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-            let key = \
-            let payload = bincode::serialize(pose)?;
-            self.session.put(key, payload).res()?;
-            Ok(())
-        }
-        
-        pub fn publish_haptic(&self, haptic: &HapticFeedback) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-            let key = "hillium/vr/haptic";
-            let payload = bincode::serialize(haptic)?;
-            self.session.put(key, payload).res()?;
-            Ok(())
-        }
-        
-        pub fn publish_gaze(&self, gaze: &GazeData) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-            let key = "hillium/vr/gaze";
-            let payload = bincode::serialize(gaze)?;
-            self.session.put(key, payload).res()?;
-            Ok(())
-        }
-    }
-}
-
-/// OpenXR bridge for pose capture
-pub mod openxr_bridge;
-
-
-/// Haptic glove protocol support
-pub mod haptic_bridge {
-    use super::*;
-    
-    pub struct HapticBridge {
-        // Haptic implementation details
-    }
-    
-    impl HapticBridge {
-        pub fn new() -> Self {
-            Self {
-                // Initialize haptic bridge
-            }
-        }
-        
-        pub fn connect_glove(&self) -> Result<(), Box<dyn std::error::Error>> {
-            // Implementation
-            Ok(())
-        }
-        
-        pub fn process_haptic_feedback(&self, _feedback: &HapticFeedback) -> Result<(), Box<dyn std::error::Error>> {
-            // Implementation
-            Ok(())
-        }
-    }
-}
-
-/// WebRTC signaling server
-pub mod webrtc_bridge {
-    use super::*;
-    
-    pub struct WebRtcServer {
-        // WebRTC implementation details
-    }
-    
-    impl WebRtcServer {
-        pub fn new() -> Self {
-            Self {
-                // Initialize WebRTC server
-            }
-        }
-        
-        pub fn start_signaling(&self) -> Result<(), Box<dyn std::error::Error>> {
-            // Implementation
-            Ok(())
-        }
-        
-        pub fn handle_nat_traversal(&self) -> Result<(), Box<dyn std::error::Error>> {
-            // Implementation
-            Ok(())
-        }
-    }
-}
-
-pub mod hrec_writer;
-pub mod mock_data;
-
-/// Module for VR bridge functionality
-pub mod vr_bridge {
-    use super::*;
-    
-    /// VR Bridge API for Project Mirror
-    pub struct VrBridgeApi {
-        // API implementation details
-    }
-    
-    impl VrBridgeApi {
-        pub fn new() -> Self {
-            Self {
-                // Initialize API
-            }
-        }
-        
-        /// Initialize the VR bridge with all components
-        pub fn initialize(&self) -> Result<(), Box<dyn std::error::Error>> {
-            // Implementation
-            Ok(())
-        }
     }
 }
