@@ -6,6 +6,8 @@ pub mod values;
 pub mod layer7;
 
 pub use validation::{ValidationResult};
+pub use layer7::cognitive_safety::CognitiveSafetyValidator;
+
 pub use soft_scores::{SoftScores, ScoreWeights, ThresholdPolicy, Verdict};
 
 /// A safety validation result wrapper
