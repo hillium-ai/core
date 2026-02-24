@@ -7,6 +7,7 @@ use bincode;
 use crate::shared_types::{VrPose, HapticFeedback, GazeData};
 
 /// Zenoh publisher for VR data
+#[derive(Clone)]
 pub struct ZenohPublisher {
     session: Session,
 }
@@ -17,7 +18,7 @@ impl ZenohPublisher {
         let session = zenoh::open(config).res()?;
         Ok(Self { session })
     }
-    
+
     pub fn publish_pose(&self, pose: &VrPose) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let key = "hillium/vr/pose";
         let payload = bincode::serialize(pose)?;
