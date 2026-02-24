@@ -1,5 +1,7 @@
 //! Hillium VR Bridge - Real-time VR data streaming for Project Mirror
 
+#![allow(non_local_definitions)]
+
 use pyo3::prelude::*;
 use pyo3::pyclass;
 
@@ -35,9 +37,127 @@ pub struct VrBridge {
     pub streaming: bool,
 }
 
-impl Default for VrBridge {
-    fn default() -> Self {
-        Self::new()
+#[allow(clippy::new_without_default)]
+#[pymethods]
+impl VrBridge {
+    #[new]
+    pub fn new() -> Self {
+        Self {
+            openxr_bridge: openxr_bridge::OpenXrBridge::new(),
+            zenoh_publisher: zenoh_bridge::ZenohPublisher::new().unwrap(),
+            haptic_bridge: haptic_bridge::HapticBridge::new(),
+            webrtc_server: webrtc_bridge::WebRtcServer::new(),
+            streaming: false,
+        }
+    }
+
+    /// Start VR data streaming
+    pub fn start_streaming(&mut self) -> PyResult<()> {
+        if let Err(e) = self.openxr_bridge.initialize() {
+            eprintln!("Failed to initialize OpenXR: {}", e);
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
+                "Failed to initialize OpenXR: {}",
+                e
+            )));
+        }
+        if let Err(e) = self.openxr_bridge.connect_headset() {
+            eprintln!("Failed to connect to headset: {}", e);
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
+                "Failed to connect to headset: {}",
+                e
+            )));
+        }
+        if let Err(e) = self.webrtc_server.initialize() {
+            eprintln!("Failed to initialize WebRTC: {}", e);
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
+                "Failed to initialize WebRTC: {}",
+                e
+            )));
+        }
+        if let Err(e) = self.webrtc_server.start_signaling() {
+            eprintln!("Failed to start WebRTC signaling: {}", e);
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
+                "Failed to start WebRTC signaling: {}",
+                e
+            )));
+        }
+        self.streaming = true;
+        Ok(())
+    }
+
+    /// Stop VR data streaming
+    pub fn stop_streaming(&mut self) -> PyResult<()> {
+        if let Err(e) = self.openxr_bridge.disconnect_headset() {
+            eprintln!("Failed to disconnect from headset: {}", e);
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
+                "Failed to disconnect from headset: {}",
+                e
+            )));
+        }
+        self.streaming = false;
+        Ok(())
+    }
+
+    /// Get current pose data
+    pub fn get_pose(&self) -> PyResult<VrPose> {
+        if !self.streaming {
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
+                "Streaming not active".to_string(),
+            ));
+        }
+        match self.openxr_bridge.capture_pose() {
+            Ok(pose) => {
+                if let Err(e) = self.zenoh_publisher.publish_pose(&pose) {
+                    eprintln!("Failed to publish pose: {}", e);
+                }
+                Ok(pose)
+            }
+            Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
+                "Failed to capture pose: {}",
+                e
+            ))),
+        }
+    }
+
+    /// Get haptic feedback data
+    pub fn get_haptic(&self) -> PyResult<HapticFeedback> {
+        if !self.streaming {
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
+                "Streaming not active".to_string(),
+            ));
+        }
+        let haptic = HapticFeedback {
+            timestamp_ns: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos() as u64,
+            force: 0.5,
+            location: "hand".to_string(),
+        };
+        if let Err(e) = self.zenoh_publisher.publish_haptic(&haptic) {
+            eprintln!("Failed to publish haptic: {}", e);
+        }
+        Ok(haptic)
+    }
+
+    /// Get gaze tracking data
+    pub fn get_gaze(&self) -> PyResult<GazeData> {
+        if !self.streaming {
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
+                "Streaming not active".to_string(),
+            ));
+        }
+        let gaze = GazeData {
+            timestamp_ns: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos() as u64,
+            position: [0.0, 0.0, 0.0],
+            direction: [0.0, 0.0, -1.0],
+        };
+        if let Err(e) = self.zenoh_publisher.publish_gaze(&gaze) {
+            eprintln!("Failed to publish gaze: {}", e);
+        }
+        Ok(gaze)
     }
 }
-
