@@ -1,6 +1,7 @@
 //! Hillium VR Bridge - Real-time VR data streaming for Project Mirror
 
 use pyo3::prelude::*;
+use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
 
 // Declare modules

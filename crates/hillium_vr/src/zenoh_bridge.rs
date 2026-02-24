@@ -2,13 +2,14 @@
 
 use zenoh::config::Config;
 use zenoh::Session;
+use pyo3::prelude::*;
 use zenoh::prelude::sync::SyncResolve;
 use bincode;
 use crate::shared_types::{VrPose, HapticFeedback, GazeData};
-
 /// Zenoh publisher for VR data
-#[derive(Clone)]
+#[pyclass]
 pub struct ZenohPublisher {
+    #[pyo3(get, set)]
     session: Session,
 }
 

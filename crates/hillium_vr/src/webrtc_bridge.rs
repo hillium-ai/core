@@ -3,8 +3,10 @@
 use super::*;
 
 /// WebRTC server for NAT traversal
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[pyclass]
 pub struct WebRtcServer {
+    #[pyo3(get, set)]
     initialized: bool,
 }
 

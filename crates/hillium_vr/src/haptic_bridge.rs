@@ -3,8 +3,10 @@
 use super::*;
 
 /// Haptic bridge for glove feedback
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[pyclass]
 pub struct HapticBridge {
+    #[pyo3(get, set)]
     initialized: bool,
 }
 

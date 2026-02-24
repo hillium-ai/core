@@ -4,9 +4,11 @@ use super::*;
 use serde::{Deserialize, Serialize};
 
 /// OpenXR bridge for VR headset connectivity
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+#[pyclass]
 pub struct OpenXrBridge {
     // OpenXR implementation details
+    #[pyo3(get, set)]
     initialized: bool,
 }
 
