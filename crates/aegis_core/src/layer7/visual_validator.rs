@@ -14,7 +14,7 @@ pub use restrav_detector::ValidatorStats;
 
 #[cfg(not(feature = "visual-validation"))]
 pub trait VisualValidator {
-    fn analyze(&mut self, _frames: &[Image]) -> SyntheticDetectionResult;
+    fn analyze(&mut self, _frames: &[Vec<f32>]) -> SyntheticDetectionResult;
     fn set_thresholds(&mut self, _thresholds: DetectionThresholds);
     fn get_stats(&self) -> ValidatorStats;
 }
