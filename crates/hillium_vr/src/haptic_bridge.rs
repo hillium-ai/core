@@ -3,6 +3,7 @@
 use super::*;
 
 /// Haptic bridge for glove feedback
+#[derive(Clone)]
 pub struct HapticBridge {
     initialized: bool,
 }

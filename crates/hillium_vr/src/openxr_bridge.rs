@@ -4,6 +4,7 @@ use super::*;
 use serde::{Deserialize, Serialize};
 
 /// OpenXR bridge for VR headset connectivity
+#[derive(Clone)]
 pub struct OpenXrBridge {
     // OpenXR implementation details
     initialized: bool,

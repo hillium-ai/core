@@ -3,6 +3,7 @@
 use super::*;
 
 /// WebRTC server for NAT traversal
+#[derive(Clone)]
 pub struct WebRtcServer {
     initialized: bool,
 }
