@@ -23,17 +23,18 @@ class RerooterNetwork(nn.Module):
         self.hidden_dim = hidden_dim
         
         # MLP for processing the combined features
+        input_dim = 2 + 2 + map_size * map_size
         self.mlp = nn.Sequential(
-            nn.Linear(2 + 2 + map_size * map_size, hidden_dim),
+            nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim // 2, 8 + 1)  # 8 actions + 1 value
+            nn.Linear(hidden_dim, 8 + 1)  # 8 actions + 1 value
         )
         
         # Separate policy and value outputs
-        self.policy_head = nn.Linear(8 + 1, 8)  # 8 actions
-        self.value_head = nn.Linear(8 + 1, 1)   # 1 value
+        self.policy_head = nn.Linear(hidden_dim, 8)  # 8 actions
+        self.value_head = nn.Linear(hidden_dim, 1)   # 1 value
         
     def forward(self, start: torch.Tensor, goal: torch.Tensor, local_map: torch.Tensor):
         """

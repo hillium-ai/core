@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 from loqus_core.motor.rerooter import RerooterNetwork
 
 def test_rerooter_network_creation():
