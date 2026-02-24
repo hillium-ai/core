@@ -11,7 +11,6 @@ use crate::shared_types::{VrPose, HapticFeedback, GazeData};
 #[pyclass]
 #[derive(Clone)]
 pub struct ZenohPublisher {
-    #[pyo3(get, set)]
     session: Arc<Session>,
 }
 

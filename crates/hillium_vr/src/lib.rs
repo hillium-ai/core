@@ -2,7 +2,6 @@
 
 use pyo3::prelude::*;
 use pyo3::pyclass;
-use serde::{Deserialize, Serialize};
 
 // Declare modules
 pub mod shared_types;
@@ -34,6 +33,12 @@ pub struct VrBridge {
     /// Flag indicating if streaming is active
     #[pyo3(get)]
     pub streaming: bool,
+}
+
+impl Default for VrBridge {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[pymethods]
