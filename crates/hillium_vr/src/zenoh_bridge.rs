@@ -5,19 +5,21 @@ use zenoh::Session;
 use pyo3::prelude::*;
 use zenoh::prelude::sync::SyncResolve;
 use bincode;
+use std::sync::Arc;
 use crate::shared_types::{VrPose, HapticFeedback, GazeData};
 /// Zenoh publisher for VR data
 #[pyclass]
+#[derive(Clone)]
 pub struct ZenohPublisher {
     #[pyo3(get, set)]
-    session: Session,
+    session: Arc<Session>,
 }
 
 impl ZenohPublisher {
     pub fn new() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let config = Config::default();
         let session = zenoh::open(config).res()?;
-        Ok(Self { session })
+        Ok(Self { session: Arc::new(session) })
     }
 
     pub fn publish_pose(&self, pose: &VrPose) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
