@@ -13,11 +13,18 @@ pub struct WebRtcServer {
 impl WebRtcServer {
     /// Create a new WebRTC server
     pub fn new() -> Self {
-        Self {
-            initialized: false,
-        }
+        Self { initialized: false }
     }
+}
 
+impl Default for WebRtcServer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl WebRtcServer {
+    /// Initialize WebRTC signaling
     /// Initialize WebRTC signaling
     pub fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         self.initialized = true;

@@ -1,12 +1,12 @@
 //! Zenoh bridge for VR data streaming
 
-use zenoh::config::Config;
-use zenoh::Session;
-use pyo3::prelude::*;
-use zenoh::prelude::sync::SyncResolve;
+use crate::shared_types::{GazeData, HapticFeedback, VrPose};
 use bincode;
+use pyo3::prelude::*;
 use std::sync::Arc;
-use crate::shared_types::{VrPose, HapticFeedback, GazeData};
+use zenoh::config::Config;
+use zenoh::prelude::sync::SyncResolve;
+use zenoh::Session;
 /// Zenoh publisher for VR data
 #[pyclass]
 #[derive(Clone)]
@@ -18,24 +18,35 @@ impl ZenohPublisher {
     pub fn new() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let config = Config::default();
         let session = zenoh::open(config).res()?;
-        Ok(Self { session: Arc::new(session) })
+        Ok(Self {
+            session: Arc::new(session),
+        })
     }
 
-    pub fn publish_pose(&self, pose: &VrPose) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pub fn publish_pose(
+        &self,
+        pose: &VrPose,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let key = "hillium/vr/pose";
         let payload = bincode::serialize(pose)?;
         self.session.put(key, payload).res()?;
         Ok(())
     }
 
-    pub fn publish_haptic(&self, haptic: &HapticFeedback) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pub fn publish_haptic(
+        &self,
+        haptic: &HapticFeedback,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let key = "hillium/vr/haptic";
         let payload = bincode::serialize(haptic)?;
         self.session.put(key, payload).res()?;
         Ok(())
     }
-    
-    pub fn publish_gaze(&self, gaze: &GazeData) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+
+    pub fn publish_gaze(
+        &self,
+        gaze: &GazeData,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let key = "hillium/vr/gaze";
         let payload = bincode::serialize(gaze)?;
         self.session.put(key, payload).res()?;

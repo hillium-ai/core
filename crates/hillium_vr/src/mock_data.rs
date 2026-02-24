@@ -1,6 +1,6 @@
 //! Mock data generators for VR Bridge testing
 
-use crate::{VrPose, HapticFeedback, GazeData};
+use crate::{GazeData, HapticFeedback, VrPose};
 
 /// Generates a mock VR pose
 pub fn mock_pose(timestamp_ns: u64) -> VrPose {

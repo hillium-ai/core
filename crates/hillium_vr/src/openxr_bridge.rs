@@ -14,9 +14,7 @@ pub struct OpenXrBridge {
 impl OpenXrBridge {
     /// Create a new OpenXR bridge
     pub fn new() -> Self {
-        Self {
-            initialized: false,
-        }
+        Self { initialized: false }
     }
 
     /// Initialize OpenXR connection

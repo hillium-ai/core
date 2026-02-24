@@ -6,9 +6,9 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use crate::VrPose;
-use crate::HapticFeedback;
 use crate::GazeData;
+use crate::HapticFeedback;
+use crate::VrPose;
 
 /// HREC file format version
 const HREC_VERSION: u32 = 1;
@@ -47,12 +47,15 @@ impl HrecWriter {
         let record = HrecRecord::Pose(pose.clone());
         let record_bytes = bincode::serialize(&record)?;
         self.writer.write_all(&record_bytes)?;
-self.record_count += 1;
+        self.record_count += 1;
         Ok(())
     }
 
     /// Writes a Haptic Feedback record
-    pub fn write_haptic(&mut self, haptic: &HapticFeedback) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn write_haptic(
+        &mut self,
+        haptic: &HapticFeedback,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let record = HrecRecord::Haptic(haptic.clone());
         let record_bytes = bincode::serialize(&record)?;
         self.writer.write_all(&record_bytes)?;

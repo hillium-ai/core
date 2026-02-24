@@ -4,14 +4,14 @@ use pyo3::prelude::*;
 use pyo3::pyclass;
 
 // Declare modules
-pub mod shared_types;
-pub mod openxr_bridge;
 pub mod haptic_bridge;
-pub mod webrtc_bridge;
-pub mod zenoh_bridge;
 pub mod hrec_writer;
 pub mod mock_data;
+pub mod openxr_bridge;
+pub mod shared_types;
 pub mod vr_bridge;
+pub mod webrtc_bridge;
+pub mod zenoh_bridge;
 
 pub use shared_types::*;
 
@@ -40,6 +40,11 @@ impl Default for VrBridge {
         Self::new()
     }
 }
+impl Default for VrBridge {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[pymethods]
 impl VrBridge {
@@ -59,19 +64,28 @@ impl VrBridge {
         // Initialize OpenXR
         if let Err(e) = self.openxr_bridge.initialize() {
             eprintln!("Failed to initialize OpenXR: {}", e);
-            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to initialize OpenXR: {}", e)));
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
+                "Failed to initialize OpenXR: {}",
+                e
+            )));
         }
 
         // Connect to headset
         if let Err(e) = self.openxr_bridge.connect_headset() {
             eprintln!("Failed to connect to headset: {}", e);
-            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to connect to headset: {}", e)));
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
+                "Failed to connect to headset: {}",
+                e
+            )));
         }
 
         // Start WebRTC signaling
         if let Err(e) = self.webrtc_server.start_signaling() {
             eprintln!("Failed to start WebRTC signaling: {}", e);
-            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to start WebRTC signaling: {}", e)));
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
+                "Failed to start WebRTC signaling: {}",
+                e
+            )));
         }
 
         self.streaming = true;
@@ -83,7 +97,10 @@ impl VrBridge {
         // Disconnect from headset
         if let Err(e) = self.openxr_bridge.disconnect_headset() {
             eprintln!("Failed to disconnect from headset: {}", e);
-            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to disconnect from headset: {}", e)));
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
+                "Failed to disconnect from headset: {}",
+                e
+            )));
         }
 
         self.streaming = false;
@@ -93,7 +110,9 @@ impl VrBridge {
     /// Get current pose data
     pub fn get_pose(&self) -> PyResult<VrPose> {
         if !self.streaming {
-            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Streaming not active".to_string()));
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
+                "Streaming not active".to_string(),
+            ));
         }
 
         match self.openxr_bridge.capture_pose() {
@@ -103,15 +122,20 @@ impl VrBridge {
                     eprintln!("Failed to publish pose: {}", e);
                 }
                 Ok(pose)
-            },
-            Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to capture pose: {}", e))),
+            }
+            Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
+                "Failed to capture pose: {}",
+                e
+            ))),
         }
     }
 
     /// Get haptic feedback data
     pub fn get_haptic(&self) -> PyResult<HapticFeedback> {
         if !self.streaming {
-            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Streaming not active".to_string()));
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
+                "Streaming not active".to_string(),
+            ));
         }
 
         // For now, return mock haptic data
@@ -123,19 +147,21 @@ impl VrBridge {
             force: 0.5,
             location: "hand".to_string(),
         };
-        
+
         // Publish haptic data via Zenoh
         if let Err(e) = self.zenoh_publisher.publish_haptic(&haptic) {
             eprintln!("Failed to publish haptic: {}", e);
         }
-        
+
         Ok(haptic)
     }
 
     /// Get gaze tracking data
     pub fn get_gaze(&self) -> PyResult<GazeData> {
         if !self.streaming {
-            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Streaming not active".to_string()));
+            return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
+                "Streaming not active".to_string(),
+            ));
         }
 
         // For now, return mock gaze data
@@ -147,12 +173,12 @@ impl VrBridge {
             position: [0.0, 0.0, 0.0],
             direction: [0.0, 0.0, -1.0],
         };
-        
+
         // Publish gaze data via Zenoh
         if let Err(e) = self.zenoh_publisher.publish_gaze(&gaze) {
             eprintln!("Failed to publish gaze: {}", e);
         }
-        
+
         Ok(gaze)
     }
 }

@@ -13,11 +13,18 @@ pub struct HapticBridge {
 impl HapticBridge {
     /// Create a new haptic bridge
     pub fn new() -> Self {
-        Self {
-            initialized: false,
-        }
+        Self { initialized: false }
     }
+}
 
+impl Default for HapticBridge {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl HapticBridge {
+    /// Initialize haptic connection
     /// Initialize haptic connection
     pub fn initialize(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         self.initialized = true;
@@ -33,7 +40,10 @@ impl HapticBridge {
     }
 
     /// Process haptic feedback from glove
-    pub fn process_haptic_feedback(&self, _feedback: &HapticFeedback) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn process_haptic_feedback(
+        &self,
+        _feedback: &HapticFeedback,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         if !self.initialized {
             return Err("Haptic bridge not initialized".into());
         }
