@@ -22,14 +22,13 @@ class RerooterNetwork(nn.Module):
         self.map_size = map_size
         self.hidden_dim = hidden_dim
         
-        # MLP for processing the combined features
+        # MLP for processing the combined features (outputs hidden_dim for policy/value heads)
         input_dim = 2 + 2 + map_size * map_size
         self.mlp = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, 8 + 1)  # 8 actions + 1 value
         )
         
         # Separate policy and value outputs
