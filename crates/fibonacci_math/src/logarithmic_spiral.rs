@@ -24,7 +24,6 @@ impl LogarithmicSpiral {
     }
 
     /// Create a golden spiral (using phi-based b parameter)
-    #[staticmethod]
     pub fn golden_spiral() -> Self {
         // For a golden spiral, we typically use b = 1/phi
         Self {
