@@ -40,11 +40,6 @@ impl Default for VrBridge {
         Self::new()
     }
 }
-impl Default for VrBridge {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[pymethods]
 impl VrBridge {

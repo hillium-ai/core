@@ -1,4 +1,4 @@
-! Logarithmic spiral trajectory generator using golden ratio principles
+// Logarithmic spiral trajectory generator using golden ratio principles
 
 use pyo3::prelude::*;
 use crate::golden_constants::{PHI, INV_PHI};
