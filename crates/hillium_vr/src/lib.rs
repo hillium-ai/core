@@ -3,34 +3,8 @@
 use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 
-/// VR Pose data structure
-#[pyclass]
-#[derive(Serialize, Deserialize, Clone)]
-pub struct VrPose {
-    pub timestamp_ns: u64,
-    pub position: [f32; 3],
-    pub rotation: [f32; 4],
-}
-
-/// Haptic feedback data
-#[pyclass]
-#[derive(Serialize, Deserialize, Clone)]
-pub struct HapticFeedback {
-    pub timestamp_ns: u64,
-    pub force: f32,
-    pub location: String,
-}
-
-/// Gaze tracking data
-#[pyclass]
-#[derive(Serialize, Deserialize, Clone)]
-pub struct GazeData {
-    pub timestamp_ns: u64,
-    pub position: [f32; 3],
-    pub direction: [f32; 3],
-}
-
 // Declare modules
+pub mod shared_types;
 pub mod openxr_bridge;
 pub mod haptic_bridge;
 pub mod webrtc_bridge;
@@ -39,19 +13,26 @@ pub mod hrec_writer;
 pub mod mock_data;
 pub mod vr_bridge;
 
+pub use shared_types::*;
+
 /// Main VR Bridge struct
 #[pyclass]
 pub struct VrBridge {
     /// OpenXR bridge for headset connectivity
-    openxr_bridge: openxr_bridge::OpenXrBridge,
+    #[pyo3(get)]
+    pub openxr_bridge: openxr_bridge::OpenXrBridge,
     /// Zenoh publisher for data streaming
-    zenoh_publisher: zenoh_bridge::ZenohPublisher,
+    #[pyo3(get)]
+    pub zenoh_publisher: zenoh_bridge::ZenohPublisher,
     /// Haptic bridge for glove feedback
-    haptic_bridge: haptic_bridge::HapticBridge,
+    #[pyo3(get)]
+    pub haptic_bridge: haptic_bridge::HapticBridge,
     /// WebRTC server for NAT traversal
-    webrtc_server: webrtc_bridge::WebRtcServer,
+    #[pyo3(get)]
+    pub webrtc_server: webrtc_bridge::WebRtcServer,
     /// Flag indicating if streaming is active
-    streaming: bool,
+    #[pyo3(get)]
+    pub streaming: bool,
 }
 
 #[pymethods]
@@ -110,7 +91,13 @@ impl VrBridge {
         }
 
         match self.openxr_bridge.capture_pose() {
-            Ok(pose) => Ok(pose),
+            Ok(pose) => {
+                // Publish pose data via Zenoh
+                if let Err(e) = self.zenoh_publisher.publish_pose(&pose) {
+                    eprintln!("Failed to publish pose: {}", e);
+                }
+                Ok(pose)
+            },
             Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to capture pose: {}", e))),
         }
     }
@@ -122,14 +109,21 @@ impl VrBridge {
         }
 
         // For now, return mock haptic data
-        Ok(HapticFeedback {
+        let haptic = HapticFeedback {
             timestamp_ns: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
                 .as_nanos() as u64,
             force: 0.5,
             location: "hand".to_string(),
-        })
+        };
+        
+        // Publish haptic data via Zenoh
+        if let Err(e) = self.zenoh_publisher.publish_haptic(&haptic) {
+            eprintln!("Failed to publish haptic: {}", e);
+        }
+        
+        Ok(haptic)
     }
 
     /// Get gaze tracking data
@@ -139,13 +133,20 @@ impl VrBridge {
         }
 
         // For now, return mock gaze data
-        Ok(GazeData {
+        let gaze = GazeData {
             timestamp_ns: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
                 .as_nanos() as u64,
             position: [0.0, 0.0, 0.0],
             direction: [0.0, 0.0, -1.0],
-        })
+        };
+        
+        // Publish gaze data via Zenoh
+        if let Err(e) = self.zenoh_publisher.publish_gaze(&gaze) {
+            eprintln!("Failed to publish gaze: {}", e);
+        }
+        
+        Ok(gaze)
     }
 }

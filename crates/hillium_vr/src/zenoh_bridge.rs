@@ -4,30 +4,7 @@ use zenoh::config::Config;
 use zenoh::Session;
 use zenoh::prelude::sync::SyncResolve;
 use bincode;
-
-/// VR Pose data structure
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct VrPose {
-    pub timestamp_ns: u64,
-    pub position: [f32; 3],
-    pub rotation: [f32; 4],
-}
-
-/// Haptic feedback data
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct HapticFeedback {
-    pub timestamp_ns: u64,
-    pub force: f32,
-    pub location: String,
-}
-
-/// Gaze tracking data
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct GazeData {
-    pub timestamp_ns: u64,
-    pub position: [f32; 3],
-    pub direction: [f32; 3],
-}
+use crate::shared_types::{VrPose, HapticFeedback, GazeData};
 
 /// Zenoh publisher for VR data
 pub struct ZenohPublisher {
@@ -47,7 +24,7 @@ impl ZenohPublisher {
         self.session.put(key, payload).res()?;
         Ok(())
     }
-    
+
     pub fn publish_haptic(&self, haptic: &HapticFeedback) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let key = "hillium/vr/haptic";
         let payload = bincode::serialize(haptic)?;
