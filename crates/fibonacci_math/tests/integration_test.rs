@@ -24,9 +24,9 @@ mod tests {
     fn test_fibonacci_heap() {
         // Test basic Fibonacci heap functionality
         let mut heap = fibonacci_math::fibonacci_heap::FibonacciHeap::new();
-        heap.push(5, "item1");
-        heap.push(10, "item2");
-        assert_eq!(heap.pop_min(), Some((5, "item1")));
+        heap.push(5.0, "item1");
+        heap.push(10.0, "item2");
+        assert_eq!(heap.pop_min(), Some((5.0, "item1")));
     }
     
     #[test]

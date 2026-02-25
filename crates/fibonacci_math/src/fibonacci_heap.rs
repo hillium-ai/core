@@ -93,9 +93,10 @@ impl FibonacciHeap {
             if let Some(child_idx) = self.nodes[min_idx].child {
                 let mut current_child = child_idx;
                 loop {
+                    // Save next child BEFORE modifying pointers (splicing overwrites .right)
+                    let next_child = self.nodes[current_child].right;
                     // Remove from child's parent
                     self.nodes[current_child].parent = None;
-                    
                     // Add to root list
                     if let Some(root_head) = self.root_list_head {
                         let right_of_head = self.nodes[root_head].right;
@@ -108,9 +109,6 @@ impl FibonacciHeap {
                         self.nodes[current_child].left = current_child;
                         self.nodes[current_child].right = current_child;
                     }
-                    
-                    // Move to next child (circular)
-                    let next_child = self.nodes[current_child].right;
                     if next_child == child_idx {
                         break;
                     }
@@ -259,6 +257,7 @@ impl FibonacciHeap {
 
     /// Check if the heap is empty
     pub fn is_empty(&self) -> bool {
+        self.node_count == 0
     }
 
     /// Insert a new key-value pair into the heap

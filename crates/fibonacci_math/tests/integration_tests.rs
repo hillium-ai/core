@@ -18,7 +18,7 @@ fn test_fibonacci_heap() {
     let mut heap = FibonacciHeap::new();
     assert!(heap.is_empty());
     
-    let index = heap.insert(1.0, "test");
+    let index = heap.insert(1.0);
     assert!(!heap.is_empty());
     assert_eq!(heap.len(), 1);
     
@@ -28,10 +28,10 @@ fn test_fibonacci_heap() {
 
 #[test]
 fn test_logarithmic_spiral() {
-    let spiral = LogarithmicSpiral::golden_spiral(10);
-    let points = spiral.generate_points();
+    let spiral = LogarithmicSpiral::golden_spiral();
+    let points = spiral.generate_points(10, None, None);
     assert_eq!(points.len(), 10);
     
     // Check that points are generated
-    assert!(points[0].x != 0.0 || points[0].y != 0.0);
+    assert!(points[0].0 != 0.0 || points[0].1 != 0.0);
 }
