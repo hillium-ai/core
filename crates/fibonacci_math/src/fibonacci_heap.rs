@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use std::collections::HashMap;
+
 
 /// Node in the Fibonacci Heap
 #[derive(Debug, Clone)]
@@ -179,9 +179,10 @@ impl FibonacciHeap {
                 } else {
                     // Remove from circular list
                     let right_of_node = self.nodes[node_id].right;
+                    let left_of_node = self.nodes[node_id].left;
                     self.nodes[parent_idx].child = Some(right_of_node);
-                    self.nodes[right_of_node].left = self.nodes[node_id].left;
-                    self.nodes[self.nodes[node_id].left].right = right_of_node;
+                    self.nodes[right_of_node].left = left_of_node;
+                    self.nodes[left_of_node].right = right_of_node;
                 }
             } else {
                 // Remove from circular list
