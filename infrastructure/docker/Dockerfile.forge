@@ -49,10 +49,13 @@ ENV LD_LIBRARY_PATH=/usr/local/lib \
     LIBRARY_PATH=/usr/local/lib
 
 # --- LAYER 4: APP DEPENDENCIES (SEMI-STABLE) ---
+# v22.5.9: Pin torch==2.1.0 CPU-only (compatible with tch 0.14, avoids oneDNN matmul on ARM64)
+RUN python3.11 -m pip install --no-cache-dir --break-system-packages \
+    "torch==2.1.0" "numpy>=1.24,<2" \
+    --index-url https://download.pytorch.org/whl/cpu
 RUN python3.11 -m pip install --no-cache-dir --break-system-packages \
     pytest>=7.0 pytest-asyncio mypy black ruff \
-    faster-whisper torch numpy \
-    silero-vad loguru pydantic \
+    faster-whisper silero-vad loguru pydantic \
     scipy sounddevice python-dotenv \
     langchain duckdb sqlparse polars pyarrow textual watchfiles \
     RestrictedPython pandas pyyaml \
