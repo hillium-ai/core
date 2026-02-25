@@ -11,5 +11,4 @@ dependencies = []
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
-python-source = "python"
 module-name = "fibonacci_math._fibonacci_math"
