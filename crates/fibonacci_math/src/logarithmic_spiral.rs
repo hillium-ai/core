@@ -97,4 +97,12 @@ impl LogarithmicSpiral {
             integral / self.b
         }
     }
+
+    /// Get the (x, y) point at a given angle
+    pub fn point_at_angle(&self, theta: f64) -> (f64, f64) {
+        let r = self.radius_at(theta);
+        let x = r * theta.cos();
+        let y = r * theta.sin();
+        (x, y)
+    }
 }

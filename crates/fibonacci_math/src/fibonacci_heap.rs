@@ -259,6 +259,15 @@ impl FibonacciHeap {
 
     /// Check if the heap is empty
     pub fn is_empty(&self) -> bool {
-        self.node_count == 0
+    }
+
+    /// Insert a new key-value pair into the heap
+    pub fn push(&mut self, key: f64, _value: &str) -> usize {
+        self.insert(key)
+    }
+
+    /// Extract and return the minimum key-value pair
+    pub fn pop_min(&mut self) -> Option<(f64, &str)> {
+        self.extract_min().map(|key| (key, ""))
     }
 }

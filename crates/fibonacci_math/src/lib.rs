@@ -5,10 +5,10 @@ pub mod golden_kalman;
 pub mod fibonacci_heap;
 pub mod logarithmic_spiral;
 
-use golden_constants::*;
-use golden_kalman::*;
-use fibonacci_heap::*;
-use logarithmic_spiral::*;
+pub use golden_constants::*;
+pub use golden_kalman::*;
+pub use fibonacci_heap::FibonacciHeap;
+pub use logarithmic_spiral::LogarithmicSpiral;
 
 #[pyfunction]
 fn calculate_golden_gain(q: f64, r: f64, iterations: usize) -> f64 {
