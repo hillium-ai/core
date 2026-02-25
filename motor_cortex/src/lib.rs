@@ -42,9 +42,8 @@ impl RootLTSPlanner {
         input_data.resize(2 + 2 + 32 * 32, 0.0);
 
         let input = Tensor::from_slice(&input_data).view([-1, 1024 + 4]);
-        let device = Device::Cpu;
-        let output = self.model.forward(&input)
-            .map_err(|e| Error::msg(format!("Forward pass failed: {}", e)))?;
+        let _device = Device::Cpu;
+        let output = self.model.forward(&input);
         Ok(output)
     }
 }
