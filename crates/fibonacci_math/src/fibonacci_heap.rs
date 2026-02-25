@@ -5,6 +5,7 @@ use pyo3::prelude::*;
 #[derive(Debug, Clone)]
 struct FibonacciNode {
     key: f64,
+    #[allow(dead_code)]
     degree: usize,
     marked: bool,
     parent: Option<usize>,
@@ -187,8 +188,10 @@ impl FibonacciHeap {
             } else {
                 // Remove from circular list
                 let right_of_node = self.nodes[node_id].right;
-                self.nodes[right_of_node].left = self.nodes[node_id].left;
-                self.nodes[self.nodes[node_id].left].right = right_of_node;
+                let left_of_node = self.nodes[node_id].left;
+                let left_id = left_of_node;
+                self.nodes[right_of_node].left = left_id;
+                self.nodes[left_id].right = right_of_node;
             }
         }
         

@@ -1,9 +1,9 @@
 use pyo3::prelude::*;
 
-mod golden_constants;
-mod golden_kalman;
-mod fibonacci_heap;
-mod logarithmic_spiral;
+pub mod golden_constants;
+pub mod golden_kalman;
+pub mod fibonacci_heap;
+pub mod logarithmic_spiral;
 
 use golden_constants::*;
 use golden_kalman::*;

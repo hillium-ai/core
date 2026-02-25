@@ -43,7 +43,7 @@ impl GoldenKalmanFilter {
         self.x += k * (measurement - self.x);
         
         // Update error covariance
-        self.p *= (1.0 - k);
+        self.p *= 1.0 - k;
     }
 
     /// Get current state estimate
