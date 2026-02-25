@@ -10,4 +10,8 @@ path = "src/lib.rs"
 [dependencies]
 anyhow = "1.0"
 nalgebra = "0.32"
-tch = "0.14"
+tch = "0.23"
+log = "0.4"
+
+[package.metadata.forge]
+LIBTORCH_BYPASS_VERSION_CHECK = "1"
