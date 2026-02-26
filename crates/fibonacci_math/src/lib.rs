@@ -5,8 +5,8 @@ pub mod golden_kalman;
 pub mod fibonacci_heap;
 pub mod logarithmic_spiral;
 
-pub use golden_constants::*;
-pub use golden_kalman::golden_kalman_gain;
+pub use golden_constants::{PHI, INV_PHI, SQRT_5};
+pub use golden_kalman::{golden_kalman_gain, GoldenKalmanFilter};
 pub use fibonacci_heap::FibonacciHeap;
 pub use logarithmic_spiral::LogarithmicSpiral;
 
