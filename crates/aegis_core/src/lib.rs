@@ -4,7 +4,6 @@ pub mod validation;
 pub mod soft_scores;
 pub mod values;
 pub mod layer7;
-pub mod layer7;
 
 pub use validation::{ValidationResult};
 pub use soft_scores::{SoftScores, ScoreWeights, ThresholdPolicy, Verdict};

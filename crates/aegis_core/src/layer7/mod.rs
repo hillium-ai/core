@@ -4,6 +4,3 @@ pub mod visual_validator;
 
 #[cfg(feature = "pyo3")]
 pub mod cognitive_safety;
-
-#[cfg(not(feature = "pyo3"))]
-pub mod cognitive_safety;
