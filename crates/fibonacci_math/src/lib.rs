@@ -21,7 +21,7 @@ fn generate_spiral_points(a: f64, b: f64, n: usize) -> Vec<(f64, f64)> {
     spiral.generate_points(n, None, None)
 }
 
-#[pymodule]
+#[pymodule(name = "fibonacci_math")]
 fn fibonacci_math(_py: Python, m: &PyModule) -> PyResult<()> {
     // Export constants
     m.add("P", PHI)?;
