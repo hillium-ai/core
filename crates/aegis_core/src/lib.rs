@@ -3,6 +3,11 @@
 pub mod validation;
 pub mod soft_scores;
 pub mod values;
+
+#[cfg(feature = "pyo3")]
+pub mod layer7;
+
+#[cfg(not(feature = "pyo3"))]
 pub mod layer7;
 
 pub use validation::{ValidationResult};

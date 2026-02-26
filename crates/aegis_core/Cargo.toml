@@ -9,8 +9,8 @@ log.workspace = true
 anyhow.workspace = true
 serde = { version = "1.0", features = ["derive"] }
 restrav_detector = { path = "../restrav_detector", optional = true }
-pyo3 = { version = "0.20", features = ["extension-module"] }
+pyo3 = { version = "0.20", features = ["extension-module"], optional = true }
 
 [features]
-visual-validation = ["restrav_detector"]
+visual-validation = ["restrav_detector", "pyo3"]
 
