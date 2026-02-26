@@ -3,6 +3,12 @@
 **Roadmap Version:** 8.4.0 "Cognitive Reasoning Upgrade"
 **Last Updated:** 2025-12-16
 
+## Python / venv Policy (MVP target: Jetson)
+
+**hillium-core targets Jetson/Ubuntu with system Python** — no venv. Forge emulates that environment.
+- Levitate (installed separately) uses its own venv — correct for host tooling.
+- **hillium-core must NOT have .venv** — maturin auto-detects .venv in the project; if present, it would use it instead of system Python. `.venv` is gitignored. If it exists (e.g. from `uv run`), remove it before using Forge: `rm -rf .venv`.
+
 ## Quick Start with Levitate
 
 ```bash
