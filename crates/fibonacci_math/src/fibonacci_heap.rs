@@ -267,4 +267,14 @@ impl FibonacciHeap {
         let value = self.nodes[min_idx].value.clone();
         self.extract_min().map(|key| (key, value))
     }
+
+    /// Check if the heap is empty
+    pub fn is_empty(&self) -> bool {
+        self.node_count == 0
+    }
+
+    /// Get the number of elements in the heap
+    pub fn len(&self) -> usize {
+        self.node_count
+    }
 }
