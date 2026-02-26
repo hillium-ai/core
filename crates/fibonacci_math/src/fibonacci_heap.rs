@@ -5,6 +5,7 @@ use pyo3::prelude::*;
 #[derive(Debug, Clone)]
 struct FibonacciNode {
     key: f64,
+    value: String,
     #[allow(dead_code)]
     degree: usize,
     marked: bool,
@@ -43,6 +44,7 @@ impl FibonacciHeap {
         
         let new_node = FibonacciNode {
             key,
+            value: String::new(),
             degree: 0,
             marked: false,
             parent: None,
@@ -250,23 +252,19 @@ impl FibonacciHeap {
         }
     }
 
-    /// Get the number of nodes in the heap
-    pub fn len(&self) -> usize {
-        self.node_count
-    }
-
-    /// Check if the heap is empty
-    pub fn is_empty(&self) -> bool {
-        self.node_count == 0
-    }
-
     /// Insert a new key-value pair into the heap
-    pub fn push(&mut self, key: f64, _value: &str) -> usize {
-        self.insert(key)
+    pub fn push(&mut self, key: f64, value: &str) -> usize {
+        let node_idx = self.insert(key);
+        if node_idx < self.nodes.len() {
+            self.nodes[node_idx].value = value.to_string();
+        }
+        node_idx
     }
 
     /// Extract and return the minimum key-value pair
-    pub fn pop_min(&mut self) -> Option<(f64, &str)> {
-        self.extract_min().map(|key| (key, ""))
+    pub fn pop_min(&mut self) -> Option<(f64, String)> {
+        let min_idx = self.min_root?;
+        let value = self.nodes[min_idx].value.clone();
+        self.extract_min().map(|key| (key, value))
     }
 }
