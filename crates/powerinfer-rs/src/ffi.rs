@@ -101,7 +101,7 @@ pub extern "C" fn powerinfer_generate(
     
     // For now, we return a placeholder response
     // In a real implementation, this would be the actual generated text
-    let response = r#'{"text": "This is a placeholder response from PowerInfer backend.", "tokens_generated": 10, "latency_ms": 50.0, "finish_reason": "stop"}'#;
+    let response = r#"{"text": "This is a placeholder response from PowerInfer backend.", "tokens_generated": 10, "latency_ms": 50.0, "finish_reason": "stop"}"#;
     
     // Convert to CString and return pointer
     match CString::new(response) {
