@@ -50,6 +50,11 @@ impl GoldenKalmanFilter {
     pub fn get_state(&self) -> f64 {
         self.x
     }
+
+    /// Get current gain value
+    pub fn gain(&self) -> f64 {
+        golden_kalman_gain(self.q, self.r, 100)
+    }
 }
 
 /// Golden Kalman gain function that converges to 1/φ
