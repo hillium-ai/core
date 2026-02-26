@@ -38,6 +38,7 @@ build:
     - "docker"
     - "make"
 forge:
+  cargo_test_timeout: 240
   setup:
     - "pip install -e loqus_core"
     - "pip install pytest pytest-asyncio"

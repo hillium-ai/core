@@ -16,8 +16,8 @@ fn calculate_golden_gain(q: f64, r: f64, iterations: usize) -> f64 {
 }
 
 #[pyfunction]
-fn generate_spiral_points(a: f64, b: f64, n: usize) -> Vec<(f64, f64)> {
-    let spiral = LogarithmicSpiral::new(a, b);
+fn generate_spiral_points(n: usize) -> Vec<(f64, f64)> {
+    let spiral = LogarithmicSpiral::golden_spiral();
     spiral.generate_points(n, None, None)
 }
 

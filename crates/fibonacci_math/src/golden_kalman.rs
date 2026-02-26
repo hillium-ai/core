@@ -18,14 +18,14 @@ pub struct GoldenKalmanFilter {
 
 #[pymethods]
 impl GoldenKalmanFilter {
-    /// Create a new GoldenKalmanFilter
+    /// Create a new GoldenKalmanFilter with default values
     #[new]
-    pub fn new(q: f64, r: f64) -> Self {
+    pub fn new(q: Option<f64>, r: Option<f64>) -> Self {
         GoldenKalmanFilter {
             x: 0.0,
             p: 1.0,
-            q,
-            r,
+            q: q.unwrap_or(0.1),
+            r: r.unwrap_or(0.1),
         }
     }
 
