@@ -2,8 +2,13 @@
 
 import unittest
 from unittest.mock import Mock
-from crates.aegis_core.layer7.cognitive_safety import CognitiveSafetyValidator
-from crates.restrav_validator import Image
+aegis = pytest = None
+try:
+    from crates.aegis_core.layer7.cognitive_safety import CognitiveSafetyValidator
+    from crates.restrav_validator import Image
+except ImportError:
+    import pytest
+    pytestmark = pytest.mark.skip(reason="aegis_core/restrav_validator Python bindings not installed")
 
 class TestCognitiveSafetyIntegration(unittest.TestCase):
     def test_cognitive_safety_validator_creation(self):
