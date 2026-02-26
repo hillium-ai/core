@@ -5,6 +5,7 @@ project:
 
 rules:
   - "EXECUTION ROOT: You are currently AT the project root."
+  - "WP-009 CLOSURE: Para WP-009, el fix de module declarations ya está aplicado. NO agregar 'check for duplicate module declarations' como paso requerido. Solo ejecutar cargo test -p aegis_core y cerrar si pasa."
   - "STRUCTURE: Use standard directory structures (e.g. 'tests/', 'crates/', 'python/')."
   - "TESTS: All Python tests and verification scripts MUST live in 'tests/'."
   - "DOCS: MVP docs and Work Packages live in /Users/jsaldana/GitLocalRepo/HilliumOS (read-only)."
