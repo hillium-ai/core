@@ -1,7 +1,6 @@
 //! FFI bindings to PowerInfer C++ library
 
 use std::ffi::{c_char, c_void, CStr, CString};
-use std::ptr;
 
 /// Handle to PowerInfer model
 pub struct PowerInferModel {
@@ -11,7 +10,13 @@ pub struct PowerInferModel {
 impl PowerInferModel {
     /// Create a new model handle
     pub fn new() -> Self {
-        Self { handle: ptr::null_mut() }
+        Self { handle: std::ptr::null_mut() }
+    }
+}
+
+impl Default for PowerInferModel {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -29,7 +34,7 @@ impl Drop for PowerInferModel {
 #[no_mangle]
 pub extern "C" fn powerinfer_load_model(
     path: *const c_char,
-    config: *const c_char,
+    _config: *const c_char,
 ) -> *mut c_void {
     // In a real implementation, this would:
     // 1. Parse the path
@@ -41,19 +46,17 @@ pub extern "C" fn powerinfer_load_model(
     // In a real implementation, this would be a proper model handle
     
     if path.is_null() {
-        return ptr::null_mut();
-    }
-    
-    // Convert path to string
-    let path_cstr = unsafe { CStr::from_ptr(path) };
+        return std::ptr::null_mut();
     let path_str = match path_cstr.to_str() {
         Ok(s) => s,
-        Err(_) => return ptr::null_mut(),
+        Err(_) => return std::ptr::null_mut(),
+    };
+        Err(_) => return std::ptr::null_mut(),
     };
     
     // Validate path exists
     if !std::path::Path::new(path_str).exists() {
-        return ptr::null_mut();
+        return std::ptr::null_mut();
     }
     
     // In a real implementation, we would load the model here
@@ -62,8 +65,7 @@ pub extern "C" fn powerinfer_load_model(
     
     // Return a dummy pointer to indicate success
     // In a real implementation, this would be a proper model handle
-    let dummy_handle = 0x12345678 as *mut c_void;
-    dummy_handle
+    0x12345678 as *mut c_void
 }
 
 /// Destroy a model
@@ -96,7 +98,7 @@ pub extern "C" fn powerinfer_generate(
     // 5. Return JSON result
     
     if handle.is_null() || prompt.is_null() || params.is_null() {
-        return ptr::null_mut();
+        return std::ptr::null_mut();
     }
     
     // For now, we return a placeholder response
@@ -105,8 +107,8 @@ pub extern "C" fn powerinfer_generate(
     
     // Convert to CString and return pointer
     match CString::new(response) {
-        Ok(c_string) => c_string.into_raw(),
-        Err(_) => ptr::null_mut(),
+(c_string) => c_string.into_raw(),
+        Err(_) => std::ptr::null_mut(),
     }
 }
 

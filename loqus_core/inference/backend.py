@@ -242,6 +242,7 @@ class PowerInferBackend(InferenceBackend):
         self._model_handle = None
         self._is_loaded = False
         self._ffi_module = None
+        self._backend_impl = None
         # Import the PowerInfer FFI module
         try:
             from .powerinfer_ffi import (
@@ -256,6 +257,17 @@ class PowerInferBackend(InferenceBackend):
             self._destroy_model_func = powerinfer_destroy_model
             self._is_loaded_func = powerinfer_is_loaded
             self._is_available = is_powerinfer_available()
+            # Try to create the backend implementation
+            try:
+                from . import powerinfer_ffi
+                if hasattr(powerinfer_ffi, 'PowerInferBackend'):
+                    self._backend_impl = powerinfer_ffi.PowerInferBackend()
+            except Exception as e:
+                logger.warning(f"Failed to create PowerInfer backend implementation: {e}")
+        except ImportError:
+            logger.warning("PowerInfer backend not available - using mock mode")
+            # Create a mock implementation
+            self._is_available = False
         except ImportError:
             logger.warning("PowerInfer backend not available - using mock mode")
             # Create a mock implementation
