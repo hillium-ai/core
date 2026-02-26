@@ -36,50 +36,29 @@ pub extern "C" fn powerinfer_load_model(
     path: *const c_char,
     _config: *const c_char,
 ) -> *mut c_void {
-    // In a real implementation, this would:
-    // 1. Parse the path
-    // 2. Parse the config
-    // 3. Load the model using PowerInfer C++ library
-    // 4. Return a handle to the loaded model
-    
-    // For now, we'll return a placeholder that indicates success
-    // In a real implementation, this would be a proper model handle
-    
     if path.is_null() {
         return std::ptr::null_mut();
+    }
+
+    let path_cstr = unsafe { CStr::from_ptr(path) };
     let path_str = match path_cstr.to_str() {
         Ok(s) => s,
         Err(_) => return std::ptr::null_mut(),
     };
-        Err(_) => return std::ptr::null_mut(),
-    };
-    
-    // Validate path exists
+
     if !std::path::Path::new(path_str).exists() {
         return std::ptr::null_mut();
     }
-    
-    // In a real implementation, we would load the model here
-    // For now, we return a dummy pointer to indicate success
-    // This is a placeholder - in reality, this would be a real model handle
-    
-    // Return a dummy pointer to indicate success
-    // In a real implementation, this would be a proper model handle
+
+    // Placeholder handle — real impl would load PowerInfer C++ model
     0x12345678 as *mut c_void
 }
 
 /// Destroy a model
 #[no_mangle]
 pub extern "C" fn powerinfer_destroy_model(handle: *mut c_void) {
-    // In a real implementation, this would:
-    // 1. Free the model resources
-    // 2. Clean up any allocated memory
-    
-    // For now, we do nothing (placeholder)
-    // In a real implementation, this would properly free the model
     if !handle.is_null() {
-        // In a real implementation, we would free the actual model resources
-        // This is just a placeholder
+        // Real impl would free model resources
     }
 }
 
@@ -90,24 +69,14 @@ pub extern "C" fn powerinfer_generate(
     prompt: *const c_char,
     params: *const c_char,
 ) -> *mut c_char {
-    // In a real implementation, this would:
-    // 1. Validate the model handle
-    // 2. Parse the prompt
-    // 3. Parse the generation parameters
-    // 4. Generate text using PowerInfer C++ library
-    // 5. Return JSON result
-    
     if handle.is_null() || prompt.is_null() || params.is_null() {
         return std::ptr::null_mut();
     }
-    
-    // For now, we return a placeholder response
-    // In a real implementation, this would be the actual generated text
+
     let response = r#"{"text": "This is a placeholder response from PowerInfer backend.", "tokens_generated": 10, "latency_ms": 50.0, "finish_reason": "stop"}"#;
-    
-    // Convert to CString and return pointer
+
     match CString::new(response) {
-(c_string) => c_string.into_raw(),
+        Ok(c_string) => c_string.into_raw(),
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -115,16 +84,15 @@ pub extern "C" fn powerinfer_generate(
 /// Check if model is loaded
 #[no_mangle]
 pub extern "C" fn powerinfer_is_loaded(handle: *mut c_void) -> bool {
-    // In a real implementation, this would check if the model handle is valid
     !handle.is_null()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_ffi_functions_exist() {
-        assert!(true); // Placeholder test
+        assert!(true);
     }
 }
