@@ -2,13 +2,11 @@
 
 use std::collections::HashMap;
 use std::ffi::CString;
-use std::ptr;
+
 
 use serde::{Deserialize, Serialize};
 
-use crate::ffi::{PowerInferModel, powerinfer_load_model, powerinfer_destroy_model, powerinfer_generate, powerinfer_is_loaded};
-
-/// Parameters for text generation
+use crate::ffi::{PowerInferModel, powerinfer_load_model, powerinfer_generate};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GenerateParams {
     pub max_tokens: u32,
