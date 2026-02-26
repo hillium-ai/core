@@ -23,9 +23,7 @@ impl Default for PowerInferModel {
 impl Drop for PowerInferModel {
     fn drop(&mut self) {
         if !self.handle.is_null() {
-            unsafe {
-                powerinfer_destroy_model(self.handle);
-            }
+            powerinfer_destroy_model(self.handle);
         }
     }
 }
