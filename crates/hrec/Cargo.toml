@@ -1,0 +1,23 @@
+[package]
+name = "hrec"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Human Recording (.hrec) format implementation"
+
+[dependencies]
+flatbuffers = "24.3.25"
+lz4_flex = "0.11"
+mmap-rs = "0.3"
+pyo3 = { workspace = true, features = ["extension-module"], optional = true }
+numpy = { version = "0.20", optional = true }
+serde = { workspace = true, features = ["derive"] }
+bincode = "1.3"
+
+[features]
+default = []
+python-bindings = ["pyo3", "numpy"]
+
+[lib]
+name = "hrec"
+crate-type = ["rlib", "cdylib"]

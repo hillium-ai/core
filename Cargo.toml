@@ -8,6 +8,7 @@ members = [
     "crates/hillium_backend",
     "crates/hillium_hal",
     "crates/hillium_vr",
+    "crates/hrec",
     "crates/powerinfer-rs",
     "crates/powerinfer_ffi",
     "crates/restrav_detector",
