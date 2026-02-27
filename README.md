@@ -10,10 +10,20 @@
   <em>The foundational kernel for HilliumOS - enabling embodied AI to perceive, reason, and act safely in the physical world.</em>
   <br /><br />
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
-  <img src="https://img.shields.io/badge/status-MVP%20Development-orange.svg" alt="Status">
+  <img src="https://img.shields.io/badge/status-Under%20Development-red.svg" alt="Status">
   <img src="https://img.shields.io/badge/rust-1.75+-orange.svg" alt="Rust">
   <img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python">
 </p>
+
+---
+
+> [!CAUTION]
+> **This project is under active development. The MVP is not yet available.**
+>
+> The codebase is being built incrementally and is **not functional for end users at this stage**.
+> APIs will change, modules are incomplete, and the system cannot be installed or run end-to-end.
+>
+> ⭐ **Star this repo to follow our progress.** We will update this notice when the first release is ready.
 
 ---
 
@@ -50,27 +60,22 @@ Our stack is curated for maximum reliability and local-first execution, optimize
 
 ---
 
-## 🚀 Installation & Hardware Readiness
+## 🗺️ Development Status
 
-The system is designed to run natively on Mac and Linux. We provide a bootstrap script that configures your hardware's specific accelerators (Metal for Mac, CUDA for Jetson/Linux).
+We are building HilliumOS Core incrementally through structured Work Packages. This is where we stand:
 
-### Prerequisites
-- **Hardware**: Mac M1/M2/M3 or NVIDIA Jetson Orin (Recommended)
-- **Rust 1.75+**
-- **Python 3.11+**
+| Phase | Focus | Status |
+|-------|-------|--------|
+| Phase 0 | Scaffolding & Project Structure | ✅ Done |
+| Phase 1 | HippoServer (SHM, Zero-Copy IPC) | ✅ Done |
+| Phase 2 | Memory Layers (Working, Associative) | ✅ Done |
+| Phase 3 | Aegis Safety Core (7-Layer) | ✅ Done |
+| Phase 4 | PyO3 Bridge & Python Bindings | 🔄 In Progress |
+| Phase 5 | LoqusCore Cognitive Engine | 🔄 In Progress |
+| Phase 6 | Motor Cortex & Simulation | ⏳ Planned |
+| Phase 7+ | Autodidactic Gym, .hrec Format | ⏳ Planned |
 
-### Native Bootstrap
-```bash
-# Clone the repository
-git clone https://github.com/hillium-ai/hillium-core.git
-cd hillium-core
-
-# Universal Bootstrap (Configures Metal/CUDA automatically)
-./scripts/setup_dev.sh
-```
-
-> [!NOTE]
-> While we provide Docker support via `infrastructure/docker/` for isolated testing, the system is optimized for **native execution** to ensure low-latency access to hardware sensors and motor controllers.
+> Installation instructions will be published here once Phase 5 is complete and the system can run end-to-end.
 
 ---
 
@@ -78,31 +83,16 @@ cd hillium-core
 
 - **[DEPENDENCIES.md](DEPENDENCIES.md)**: Master manifest of Python, Rust, and System requirements for real-hardware deployment.
 - **[DEVELOPMENT.md](DEVELOPMENT.md)**: Guidelines for TDD, conventional commits, and CI/CD pipelines.
-- **[CLAUDE.md](CLAUDE.md)**: Cultural and technical context for AI agents working on this project.
 
 ---
 
-## 🏁 Verification & Testing
+## 🤝 Follow the Build
 
-HilliumOS Core is built with a **Zero Tolerance for regressions** policy on both simulated and real hardware.
+We build in public. The best way to stay up to date:
 
-```bash
-# Run the complete test suite
-pytest tests/ -v
-cargo test --all
-
-# Audit the environment setup
-python3 scripts/verify_env.py
-```
-
----
-
-## 🤝 Contributing & Community
-
-Join the revolution in Kinetic AI. We follow the **Open Core** philosophy.
-
-- 💬 [Join Discord](https://discord.gg/n7ChqvPWgR)
-- 🌐 [Visit Hillium.ai](https://www.hillium.ai)
+- ⭐ **Star this repo** — get notified when the first release drops
+- 💬 [Join Discord](https://discord.gg/n7ChqvPWgR) — discuss architecture, ask questions, follow progress
+- 🌐 [Visit Hillium.ai](https://www.hillium.ai) — vision, roadmap, and early access
 - 📄 [MIT License](LICENSE)
 
 <p align="center">
