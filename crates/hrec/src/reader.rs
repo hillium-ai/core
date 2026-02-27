@@ -1,5 +1,4 @@
 use std::fs::File;
-use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::Path;
 
 use mmap_rs::Mmap;
@@ -9,7 +8,7 @@ use crate::header::{BodyPoseSample, Header, StreamInfo};
 /// HrecReader handles reading .hrec files with memory-mapped seeks
 pub struct HrecReader {
     header: Header,
-    mmap: Mmap,
+    mmap: Option<Mmap>,
 }
 
 impl HrecReader {
@@ -24,7 +23,7 @@ impl HrecReader {
         // Read and parse header from the end of the file
         let header = Self::read_header(&mmap, file_len)?;
 
-        Ok(HrecReader { header, mmap })
+(HrecReader { header, mmap: Some(mmap) })
     }
 
     /// Read the header from the mmap
@@ -53,7 +52,7 @@ impl HrecReader {
     /// Seek to a specific timestamp and return samples
     pub fn seek_to_timestamp(&self, _timestamp_us: u64) -> std::io::Result<Vec<BodyPoseSample>> {
         // TODO: Implement seek-to-timestamp with <10ms latency
-        Ok(Vec::new())
+(Vec::new())
     }
 
     /// Get the header
@@ -67,13 +66,6 @@ impl HrecReader {
     }
 }
 
-impl std::fmt::Debug for HrecReader {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("HrecReader")
-            .field("header", &self.header)
-            .finish()
-    }
-}
 impl std::fmt::Debug for HrecReader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("HrecReader")

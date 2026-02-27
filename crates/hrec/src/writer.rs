@@ -24,7 +24,7 @@ impl HrecWriter {
         let file = File::create(path)?;
         let buf_writer = BufWriter::new(file);
 
-(HrecWriter {
+        Ok(HrecWriter {
             header: Header::new(String::new(), 0, Vec::new()),
             file: buf_writer,
             stream_writers: Vec::new(),
@@ -38,7 +38,7 @@ impl HrecWriter {
         streams: Vec<StreamInfo>,
     ) -> std::io::Result<Self> {
         self.header = Header::new(session_id, 0, streams);
-(self)
+        Ok(self)
     }
 
     /// Write a body pose sample to the body_pose stream
@@ -53,7 +53,7 @@ impl HrecWriter {
         self.file.write_all(&size.to_le_bytes())?;
         self.file.write_all(&compressed)?;
         
-(())
+        Ok(())
     }
 
     /// Write a hand pose sample to the specified hand stream
@@ -63,19 +63,19 @@ impl HrecWriter {
         _sample: &BodyPoseSample,
     ) -> std::io::Result<()> {
         // TODO: Implement hand pose writing
-(())
+        Ok(())
     }
 
     /// Write haptics data
     pub fn write_haptics(&mut self, _timestamp_us: u64, _data: &[f32]) -> std::io::Result<()> {
         // TODO: Implement haptics writing
-(())
+        Ok(())
     }
 
     /// Write gaze data
     pub fn write_gaze(&mut self, _timestamp_us: u64, _gaze_dir: [f32; 3]) -> std::io::Result<()> {
         // TODO: Implement gaze writing
-(())
+        Ok(())
     }
 
     /// Finalize the recording and write the header
@@ -88,6 +88,6 @@ impl HrecWriter {
         self.file.write_all(&header_data)?;
         
         self.file.flush()?;
-(())
+        Ok(())
     }
 }
