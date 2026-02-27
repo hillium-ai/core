@@ -1,0 +1,46 @@
+namespace hrec;
+
+/// Magic number for .hrec files: "HREC"
+const HREC_MAGIC: uint32 = 0x48524543;
+
+/// Current format version
+const HREC_VERSION: uint16 = 1;
+
+/// Stream types supported by the .hrec format
+enum StreamType: byte {
+  BodyPose = 0,
+  HandTracking = 1,
+  Haptics = 2,
+  Gaze = 3
+}
+
+/// Information about a single stream in the recording
+table StreamInfo {
+  name: string;
+  stream_type: StreamType;
+  frequency_hz: uint16;
+  sample_count: uint64;
+  offset: uint64;
+}
+
+/// Header of the .hrec file
+table Header {
+  magic: uint32 = HREC_MAGIC;
+  version: uint16 = HREC_VERSION;
+  session_id: string;
+  duration_ms: uint64;
+  streams: [StreamInfo];
+}
+
+/// A single joint pose (position + rotation + confidence)
+table JointPose {
+  position: [float32] (required);
+  rotation: [float32] (required);
+  confidence: float;
+}
+
+/// A body pose sample with timestamp and joint poses
+table BodyPoseSample {
+  timestamp_us: uint64;
+  joints: [JointPose] (required);
+}

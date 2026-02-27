@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::Path;
 
 use mmap_rs::Mmap;
@@ -21,16 +21,33 @@ impl HrecReader {
         // Memory-map the file for fast random access
         let mmap = unsafe { Mmap::map(&file)? };
 
-        // Read and parse header
-        let header = Self::read_header(&mmap)?;
+        // Read and parse header from the end of the file
+        let header = Self::read_header(&mmap, file_len)?;
 
         Ok(HrecReader { header, mmap })
     }
 
     /// Read the header from the mmap
-    fn read_header(mmap: &[u8]) -> std::io::Result<Header> {
-        // TODO: Parse header from mmap
-        Ok(Header::new(String::new(), 0, Vec::new()))
+    fn read_header(mmap: &[u8], file_len: u64) -> std::io::Result<Header> {
+        // Read header size from the end of the file
+        if file_len < 8 {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "File too small to contain header",
+            ));
+        }
+
+        let header_size_start = (file_len - 8) as usize;
+        let header_size_bytes = &mmap[header_size_start..header_size_start + 8];
+        let header_size = u64::from_le_bytes(header_size_bytes.try_into().unwrap());
+
+        // Read header data
+        let header_start = (file_len - 8 - header_size) as usize;
+        let header_bytes = &mmap[header_start..header_start + header_size as usize];
+
+        bincode::deserialize(header_bytes).map_err(|e| {
+            std::io::Error::new(std::io::ErrorKind::InvalidData, e)
+        })
     }
 
     /// Seek to a specific timestamp and return samples
@@ -50,6 +67,13 @@ impl HrecReader {
     }
 }
 
+impl std::fmt::Debug for HrecReader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HrecReader")
+            .field("header", &self.header)
+            .finish()
+    }
+}
 impl std::fmt::Debug for HrecReader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("HrecReader")
