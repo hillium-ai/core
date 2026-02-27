@@ -2,9 +2,9 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
-use lz4_flex::frame::{FrameInfo, FrameWriter};
+use lz4_flex;
 
-use crate::header::{BodyPoseSample, Header, StreamInfo, StreamType};
+use crate::header::{BodyPoseSample, Header, StreamInfo};
 
 /// HrecWriter handles writing .hrec files with LZ4 compression
 pub struct HrecWriter {
