@@ -1,4 +1,3 @@
-use flatbuffers::FlatBufferBuilder;
 use serde::{Deserialize, Serialize};
 
 /// Magic number for .hrec files: "HREC"
@@ -79,6 +78,16 @@ pub struct JointPose {
     pub position: [f32; 3],
     pub rotation: [f32; 4],
     pub confidence: f32,
+}
+
+impl JointPose {
+    pub fn new(position: [f32; 3], rotation: [f32; 4], confidence: f32) -> Self {
+        JointPose {
+            position,
+            rotation,
+            confidence,
+        }
+    }
 }
 
 /// A body pose sample with timestamp and joint poses
