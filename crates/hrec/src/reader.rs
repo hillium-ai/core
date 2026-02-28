@@ -18,12 +18,6 @@ impl HrecReader {
         let file_len = file.metadata()?.len();
 
         // Memory-map the file for fast random access
-        let mmap = unsafe { Mmap::map(&file)? };
-
-        // Read and parse header from the end of the file
-        let header = Self::read_header(&mmap, file_len)?;
-
-(HrecReader { header, mmap: Some(mmap) })
     }
 
     /// Read the header from the mmap
