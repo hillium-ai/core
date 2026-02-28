@@ -22,7 +22,6 @@ impl HrecWriter {
         Ok(HrecWriter {
             header: Header::new(String::new(), 0, Vec::new()),
             file: buf_writer,
-            stream_writers: Vec::new(),
         })
     }
 
