@@ -1,20 +1,11 @@
 [package]
 name = "restrav_detector"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Restrav Detector - Stub for WP-045 testing only"
 
 [dependencies]
-# Dependencies are optional — only needed when running with real DINOv2/ONNX backend.
-# For mock/test implementations (relaxed WP-042 criteria), no external deps required.
 
 [features]
-visual-validation = ["dep:onnxruntime", "dep:image"]
-
-[dependencies.onnxruntime]
-version = "0.0.14"
-optional = true
-
-[dependencies.image]
-version = "0.24"
-optional = true
-
+default = []
