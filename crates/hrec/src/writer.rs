@@ -1,10 +1,14 @@
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
+use std::env;
 
 use lz4_flex::compress;
 
 use crate::header::{BodyPoseSample, Header, StreamInfo};
+
+#[cfg(test)]
+use crate::reader::HrecReader;
 
 /// HrecWriter handles writing .hrec files with LZ4 compression
 /// HrecWriter handles writing .hrec files with LZ4 compression
@@ -91,5 +95,110 @@ impl HrecWriter {
         
         self.file.flush()?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::header::{JointPose, StreamType};
+
+    #[test]
+    fn test_writer_new() {
+        let temp_dir = std::env::temp_dir();
+        let path = temp_dir.join("test_writer_new.hrec");
+        let writer = HrecWriter::new(&path);
+        assert!(writer.is_ok());
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn test_writer_init() {
+        let temp_dir = std::env::temp_dir();
+        let path = temp_dir.join("test_writer_init.hrec");
+        let mut writer = HrecWriter::new(&path).unwrap();
+        let streams = vec![StreamInfo {
+            name: String::from("body_pose"),
+            stream_type: StreamType::BodyPose,
+            frequency_hz: 60,
+            sample_count: 0,
+            offset: 0,
+        }];
+        let result = writer.init(String::from("test_session"), streams);
+        assert!(result.is_ok());
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn test_writer_finalize() {
+        let temp_dir = std::env::temp_dir();
+        let path = temp_dir.join("test_writer_finalize.hrec");
+        let mut writer = HrecWriter::new(&path).unwrap();
+        let streams = vec![StreamInfo {
+            name: String::from("body_pose"),
+            stream_type: StreamType::BodyPose,
+            frequency_hz: 60,
+            sample_count: 0,
+            offset: 0,
+        }];
+        writer = writer.init(String::from("test_session"), streams).unwrap();
+        assert!(writer.finalize().is_ok());
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn test_writer_write_body_pose() {
+        let temp_dir = std::env::temp_dir();
+        let path = temp_dir.join("test_writer_write_body_pose.hrec");
+        let mut writer = HrecWriter::new(&path).unwrap();
+        let streams = vec![StreamInfo {
+            name: String::from("body_pose"),
+            stream_type: StreamType::BodyPose,
+            frequency_hz: 60,
+            sample_count: 0,
+            offset: 0,
+        }];
+        writer = writer.init(String::from("test_session"), streams).unwrap();
+        
+        let joints = vec![JointPose::new([0.0; 3], [0.0; 4], 1.0)];
+        let sample = BodyPoseSample::new(123456789, joints);
+        assert!(writer.write_body_pose(&sample).is_ok());
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn test_writer_roundtrip() {
+        let path = "test_writer_roundtrip.hrec";
+        
+        // Write
+        {
+            let mut writer = HrecWriter::new(path).unwrap();
+            let streams = vec![StreamInfo {
+                name: String::from("body_pose"),
+                stream_type: StreamType::BodyPose,
+                frequency_hz: 60,
+                sample_count: 0,
+                offset: 0,
+            }];
+            writer = writer.init(String::from("test_session"), streams).unwrap();
+            
+            let joints = vec![JointPose::new([1.0, 2.0, 3.0], [0.0, 0.0, 0.0, 1.0], 0.95)];
+            let sample = BodyPoseSample::new(123456789, joints);
+            writer.write_body_pose(&sample).unwrap();
+            // Finalize and drop writer to ensure file is closed
+            writer.finalize().unwrap();
+        }
+        
+        // Check if file exists
+        assert!(std::path::Path::new(path).exists(), "File does not exist: {}", path);
+        
+        // Read back
+        let reader = match HrecReader::open(path) {
+            Ok(r) => r,
+            Err(e) => panic!("Failed to open file '{}': {}", path, e),
+        };
+        assert_eq!(reader.header().session_id, "test_session");
+        assert_eq!(reader.header().streams.len(), 1);
+        let _ = std::fs::remove_file(path);
     }
 }
