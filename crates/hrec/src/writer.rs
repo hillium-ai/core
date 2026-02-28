@@ -7,15 +7,10 @@ use lz4_flex::compress;
 use crate::header::{BodyPoseSample, Header, StreamInfo};
 
 /// HrecWriter handles writing .hrec files with LZ4 compression
+/// HrecWriter handles writing .hrec files with LZ4 compression
 pub struct HrecWriter {
     header: Header,
     file: BufWriter<File>,
-    stream_writers: Vec<StreamWriter>,
-}
-
-struct StreamWriter {
-    writer: BufWriter<File>,
-    sample_count: u64,
 }
 
 impl HrecWriter {
