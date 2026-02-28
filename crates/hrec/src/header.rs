@@ -68,7 +68,7 @@ impl Header {
     }
 
     pub fn is_valid(&self) -> bool {
-        self.magic == HREC_MAGIC && self.version <= HREC_VERSION
+        self.magic == HREC_MAGIC && self.version == HREC_VERSION
     }
 }
 
@@ -100,5 +100,73 @@ pub struct BodyPoseSample {
 impl BodyPoseSample {
     pub fn new(timestamp_us: u64, joints: Vec<JointPose>) -> Self {
         BodyPoseSample { timestamp_us, joints }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_magic_number() {
+        assert_eq!(HREC_MAGIC, 0x48524543);
+    }
+
+    #[test]
+    fn test_version() {
+        assert_eq!(HREC_VERSION, 1);
+    }
+
+    #[test]
+    fn test_stream_type_from_u8() {
+        assert_eq!(StreamType::from_u8(0), Some(StreamType::BodyPose));
+        assert_eq!(StreamType::from_u8(1), Some(StreamType::HandTracking));
+        assert_eq!(StreamType::from_u8(2), Some(StreamType::Haptics));
+        assert_eq!(StreamType::from_u8(3), Some(StreamType::Gaze));
+        assert_eq!(StreamType::from_u8(99), None);
+    }
+
+    #[test]
+    fn test_stream_type_as_u8() {
+        assert_eq!(StreamType::BodyPose.as_u8(), 0);
+        assert_eq!(StreamType::HandTracking.as_u8(), 1);
+        assert_eq!(StreamType::Haptics.as_u8(), 2);
+        assert_eq!(StreamType::Gaze.as_u8(), 3);
+    }
+
+    #[test]
+    fn test_header_is_valid() {
+        let header = Header::new(String::from("test"), 1000, Vec::new());
+        assert!(header.is_valid());
+    }
+
+    #[test]
+    fn test_header_is_valid_with_future_version() {
+        let mut header = Header::new(String::from("test"), 1000, Vec::new());
+        header.version = 2;
+        assert!(!header.is_valid());
+    }
+
+    #[test]
+    fn test_header_is_invalid_with_wrong_magic() {
+        let mut header = Header::new(String::from("test"), 1000, Vec::new());
+        header.magic = 0xDEADBEEF;
+        assert!(!header.is_valid());
+    }
+
+    #[test]
+    fn test_joint_pose_new() {
+        let pose = JointPose::new([1.0, 2.0, 3.0], [0.0, 0.0, 0.0, 1.0], 0.95);
+        assert_eq!(pose.position, [1.0, 2.0, 3.0]);
+        assert_eq!(pose.rotation, [0.0, 0.0, 0.0, 1.0]);
+        assert_eq!(pose.confidence, 0.95);
+    }
+
+    #[test]
+    fn test_body_pose_sample_new() {
+        let joints = vec![JointPose::new([0.0; 3], [0.0; 4], 1.0)];
+        let sample = BodyPoseSample::new(123456789, joints);
+        assert_eq!(sample.timestamp_us, 123456789);
+        assert_eq!(sample.joints.len(), 1);
     }
 }
