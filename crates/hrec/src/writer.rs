@@ -60,9 +60,17 @@ impl HrecWriter {
     pub fn write_hand_pose(
         &mut self,
         _hand: &str,
-        _sample: &BodyPoseSample,
+        sample: &BodyPoseSample,
     ) -> std::io::Result<()> {
-        // TODO: Implement hand pose writing
+        // Compress the sample using LZ4
+        let data = bincode::serialize(sample)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let compressed = compress(&data);
+        
+        // Write compressed data with size prefix
+        let size = compressed.len() as u32;
+        self.file.write_all(&size.to_le_bytes())?;
+        self.file.write_all(&compressed)?;
         Ok(())
     }
 
@@ -80,7 +88,7 @@ impl HrecWriter {
 
     /// Finalize the recording and write the header
     pub fn finalize(mut self) -> std::io::Result<()> {
-        // Write header at the end
+        // Write header at the END (after all data)
         let header_data = bincode::serialize(&self.header)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
         

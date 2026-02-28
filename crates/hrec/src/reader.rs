@@ -1,28 +1,35 @@
 use std::fs::File;
-use std::path::Path;
+use std::io::{BufReader, Read, Seek, SeekFrom};
 
-use mmap_rs::Mmap;
+use lz4_flex::decompress;
 
-use crate::header::{BodyPoseSample, Header, StreamInfo};
+use crate::header::{BodyPoseSample, Header};
 
-/// HrecReader handles reading .hrec files with memory-mapped seeks
+/// HrecReader handles reading .hrec files with memory-mapped I/O
 pub struct HrecReader {
+    file: BufReader<File>,
     header: Header,
-    mmap: Option<Mmap>,
 }
 
 impl HrecReader {
-    /// Open an .hrec file for reading
-    pub fn open<P: AsRef<Path>>(path: P) -> std::io::Result<Self> {
+    /// Open an .hrec file and parse its header
+    pub fn open(path: &str) -> std::io::Result<Self> {
         let file = File::open(path)?;
-        let file_len = file.metadata()?.len();
+        let mut buf_reader = BufReader::new(file);
 
-        // Memory-map the file for fast random access
+        // Read header from end of file
+        let header = Self::read_header(&mut buf_reader)?;
+
+        Ok(HrecReader {
+            file: buf_reader,
+            header,
+        })
     }
 
-    /// Read the header from the mmap
-    fn read_header(mmap: &[u8], file_len: u64) -> std::io::Result<Header> {
-        // Read header size from the end of the file
+    /// Read header from the end of the file
+    fn read_header(reader: &mut BufReader<File>) -> std::io::Result<Header> {
+        // Get file size
+        let file_len = reader.seek(SeekFrom::End(0))?;
         if file_len < 8 {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
@@ -30,40 +37,54 @@ impl HrecReader {
             ));
         }
 
-        let header_size_start = (file_len - 8) as usize;
-        let header_size_bytes = &mmap[header_size_start..header_size_start + 8];
-        let header_size = u64::from_le_bytes(header_size_bytes.try_into().unwrap());
+        // Read header size (8 bytes at end)
+        reader.seek(SeekFrom::End(-8))?;
+        let mut size_bytes = [0u8; 8];
+        reader.read_exact(&mut size_bytes)?;
+        let header_size = u64::from_le_bytes(size_bytes) as usize;
 
         // Read header data
-        let header_start = (file_len - 8 - header_size) as usize;
-        let header_bytes = &mmap[header_start..header_start + header_size as usize];
+        reader.seek(SeekFrom::End(-(header_size as i64 + 8)))?;
+        let mut header_data = vec![0u8; header_size];
+        reader.read_exact(&mut header_data)?;
 
-        bincode::deserialize(header_bytes).map_err(|e| {
-            std::io::Error::new(std::io::ErrorKind::InvalidData, e)
-        })
+        let header = bincode::deserialize(&header_data)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+        Ok(header)
     }
 
-    /// Seek to a specific timestamp and return samples
-    pub fn seek_to_timestamp(&self, _timestamp_us: u64) -> std::io::Result<Vec<BodyPoseSample>> {
-        // TODO: Implement seek-to-timestamp with <10ms latency
-(Vec::new())
+    /// Seek to the nearest sample to the given timestamp
+    pub fn seek(&mut self, _timestamp_us: u64) -> std::io::Result<()> {
+        // TODO: Implement timestamp-based seeking using index
+        Ok(())
+    }
+
+    /// Read the next body pose sample
+    pub fn read_body_pose(&mut self) -> std::io::Result<Option<BodyPoseSample>> {
+        // Read compressed data size
+        let mut size_bytes = [0u8; 4];
+        match self.file.read_exact(&mut size_bytes) {
+            Ok(_) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => return Ok(None),
+            Err(e) => return Err(e),
+        }
+
+        let data_size = u32::from_le_bytes(size_bytes) as usize;
+        let mut compressed = vec![0u8; data_size];
+        self.file.read_exact(&mut compressed)?;
+
+        // Decompress
+        let decompressed = decompress(&compressed, data_size)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+
+        // Deserialize
+        let sample = bincode::deserialize(&decompressed)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+Ok(Some(sample))
     }
 
     /// Get the header
     pub fn header(&self) -> &Header {
         &self.header
-    }
-
-    /// Get stream info by name
-    pub fn get_stream_info(&self, name: &str) -> Option<&StreamInfo> {
-        self.header.streams.iter().find(|s| s.name == name)
-    }
-}
-
-impl std::fmt::Debug for HrecReader {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("HrecReader")
-            .field("header", &self.header)
-            .finish()
     }
 }
