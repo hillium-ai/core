@@ -85,7 +85,10 @@ impl HrecWriter {
     }
 
     /// Finalize the recording and write the header
-    pub fn finalize(mut self) -> std::io::Result<()> {
+    pub fn finalize(&mut self) -> std::io::Result<()> {
+        // Flush buffered data first
+        self.file.get_mut().sync_all()?;
+        
         // Write header at the END (after all data)
         let header_data = bincode::serialize(&self.header)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
@@ -93,7 +96,7 @@ impl HrecWriter {
         self.file.write_all(&header_data.len().to_le_bytes())?;
         self.file.write_all(&header_data)?;
         
-        self.file.flush()?;
+        self.file.get_mut().sync_all()?;
         Ok(())
     }
 }
@@ -185,9 +188,11 @@ mod tests {
             let joints = vec![JointPose::new([1.0, 2.0, 3.0], [0.0, 0.0, 0.0, 1.0], 0.95)];
             let sample = BodyPoseSample::new(123456789, joints);
             writer.write_body_pose(&sample).unwrap();
-            // Finalize and drop writer to ensure file is closed
             writer.finalize().unwrap();
         }
+        
+        // Verify file exists and can be read
+        assert!(std::path::Path::new(path).exists(), "File does not exist: {}", path);
         
         // Check if file exists
         assert!(std::path::Path::new(path).exists(), "File does not exist: {}", path);
